@@ -83,6 +83,9 @@ Resources:
           apt-get install -y -q git
           mkdir -p /srv/fieldtest
           git clone https://github.com/immensus-team/fieldtest.git /srv/fieldtest/code
+          # The newest release, which the hourly update follows from then on.
+          TAG=$(git -C /srv/fieldtest/code tag -l 'v*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || true)
+          if [ -n "$TAG" ]; then git -C /srv/fieldtest/code checkout -q --detach "$TAG"; fi
           bash /srv/fieldtest/code/setup/install.sh base --name ${InstallName}
       Tags:
         - Key: Name

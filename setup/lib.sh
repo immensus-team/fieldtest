@@ -12,3 +12,5 @@ RUNTIME=$(cfg runtime /srv/fieldtest/runtime)
 MIRROR=$(cfg mirror /srv/fieldtest/mirror.git)
 CLONE=$(cfg clone /home/fieldtest/clone)
 WEB_PORT=$(cfg webPort 4310)
+# systemctl --user from a sudo shell (`sudo -iu fieldtest ...`) has no session to find the user manager.
+export XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-/run/user/$(id -u)}

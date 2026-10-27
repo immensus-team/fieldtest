@@ -28,6 +28,7 @@ const HELP = `fieldtest <command>
   recipe repair [--feedback "..."]   실행 지침 수리를 다시 요청
   recipe key <이름>        실제 키 저장 (값은 표준 입력)
   recipe approve --hash <h>  검증된 실행 지침 초안 승인 (recipe show의 hash, 게이트 항목을 바꾼 수리)
+  update [--now]           새 릴리스 태그로 업데이트 (systemd timer가 1시간마다 실행, --now는 작업을 기다리지 않음)
   doctor                   실행 환경 점검`;
 
 const [command, ...rest] = process.argv.slice(2);
@@ -45,6 +46,7 @@ const { values, positionals } = parseArgs({
     repo: { type: "string" },
     base: { type: "string" },
     "skip-keys": { type: "string" },
+    now: { type: "boolean" },
   },
 });
 const id = positionals[0]?.toUpperCase();
@@ -54,6 +56,15 @@ try {
     case "run":
       await (await import("../lib/agent.mjs")).loop();
       break;
+    case "update": {
+      // The timer and a manual --now must not swap the code under each other.
+      const { acquireLock } = await import("../lib/lock.mjs");
+      const { paths } = await import("../lib/config.mjs");
+      if (!acquireLock(`${paths.run}/update.lock`)) throw new Error("다른 업데이트가 돌고 있다");
+      const r = await (await import("../lib/update.mjs")).update({ now: Boolean(values.now) });
+      console.log(JSON.stringify(r));
+      break;
+    }
     case "bootstrap": {
       // One bootstrap at a time: two would rewrite the same draft and share one worktree.
       const { acquireLock } = await import("../lib/lock.mjs");

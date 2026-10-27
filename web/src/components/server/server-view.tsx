@@ -346,6 +346,17 @@ function Header({ s, freshness }: { s: ServerStatus; freshness: ReactNode }) {
         </TooltipContent>
       </Tooltip>
       <Health services={s.services} />
+      {s.version.current && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="font-mono text-xs text-muted-foreground">{s.version.current}</span>
+          </TooltipTrigger>
+          <TooltipContent>
+            <div>1시간마다 새 버전을 확인해 자동으로 업데이트합니다.</div>
+            {s.version.waiting && <div>{s.version.waiting}: 에이전트 작업이 끝나면 업데이트합니다.</div>}
+          </TooltipContent>
+        </Tooltip>
+      )}
       {freshness}
     </motion.div>
   );

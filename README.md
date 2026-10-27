@@ -41,6 +41,7 @@ AWS가 아닌 Ubuntu 24.04 서버라면:
 
 ```bash
 sudo git clone https://github.com/immensus-team/fieldtest.git /srv/fieldtest/code
+sudo git -C /srv/fieldtest/code checkout --detach "$(git -C /srv/fieldtest/code tag -l 'v*' --sort=-v:refname | head -1)"
 sudo bash /srv/fieldtest/code/setup/install.sh base --name <설치 이름>
 ```
 
@@ -81,9 +82,13 @@ sudo -iu fieldtest fieldtest recipe show
 
 ## 업데이트와 삭제
 
+업데이트는 자동이다. 서버가 1시간마다 이 저장소의 새 릴리스 태그(`vX.Y.Z`)를 확인한다. 새 태그가 있으면 에이전트가
+하던 작업이 끝나기를 기다렸다가(최대 2시간) 그 버전으로 바꾸고 서비스를 다시 시작한다. 다시 시작한 서비스가 뜨지
+않으면 이전 버전으로 되돌리고 대시보드에 알린다. 지금 버전은 대시보드 서버 화면에 나온다. 기다리지 않고 바로
+업데이트하려면:
+
 ```bash
-sudo -iu fieldtest git -C /srv/fieldtest/code pull
-sudo -iu fieldtest bash /srv/fieldtest/code/setup/start.sh
+sudo -iu fieldtest fieldtest update --now
 ```
 
 삭제는 CloudFormation 스택을 지우면 된다.

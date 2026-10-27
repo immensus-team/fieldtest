@@ -13,7 +13,7 @@ cd "$DATA"
 AGENT_HOME=$(getent passwd "$AGENT" | cut -d: -f6)
 AS_AGENT=(sudo -n -u "$AGENT" -H env COREPACK_ENABLE_DOWNLOAD_PROMPT=0 GIT_TERMINAL_PROMPT=0 "PATH=$RUNTIME/node/bin:$AGENT_HOME/.local/bin:/usr/bin:/bin:/usr/sbin:/sbin")
 UNITS=$HOME/.config/systemd/user
-WORKERS=(fieldtest-watch.timer fieldtest.service)
+WORKERS=(fieldtest-watch.timer fieldtest.service fieldtest-update.timer)
 # Slack runs only once its owner is set; an install that skipped Slack has no tokens.
 SLACK_ENV=$HOME/.config/fieldtest/slack.env
 if grep -q '^SLACK_USER_ID=.' "$SLACK_ENV" 2>/dev/null; then WORKERS+=(fieldtest-slack.service); fi
@@ -127,6 +127,31 @@ Description=Run fieldtest watch every minute
 OnActiveSec=0
 OnUnitInactiveSec=60
 AccuracySec=1s
+
+[Install]
+WantedBy=timers.target
+UNIT
+# New release tags (lib/update.mjs). The service runs this script itself, so stop_workers leaves it alone.
+cat > "$UNITS/fieldtest-update.service" <<UNIT
+[Unit]
+Description=fieldtest update to the newest release tag
+
+[Service]
+Type=oneshot
+WorkingDirectory=$DATA
+ExecStart=/bin/bash $TOOL/setup/update-run.sh
+TimeoutStartSec=4h
+StandardOutput=append:$DATA/run/update.log
+StandardError=append:$DATA/run/update.log
+UNIT
+cat > "$UNITS/fieldtest-update.timer" <<UNIT
+[Unit]
+Description=Check for a new fieldtest release every hour
+
+[Timer]
+OnBootSec=15min
+OnUnitActiveSec=1h
+RandomizedDelaySec=10min
 
 [Install]
 WantedBy=timers.target
