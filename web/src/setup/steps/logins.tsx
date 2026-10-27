@@ -118,13 +118,16 @@ export function LoginStep({ kind, setup, headingRef, onDone, reopen }: StepProps
           <DoneNote>{copy.done({ ...setup.steps[kind].info })}</DoneNote>
         </Part>
       )}
-      <StepError title="로그인하지 못했습니다" error={st?.state === "failed" ? st.error : (start.error?.message ?? sendCode.error?.message)} />
-      {(!id || st?.state === "failed") && (
+      <StepError
+        title="로그인하지 못했습니다"
+        error={st?.state === "failed" ? st.error : (status.error?.message ?? start.error?.message ?? sendCode.error?.message)}
+      />
+      {(!id || st?.state === "failed" || status.isError) && (
         <Part>
           <div>
             <StatusButton
               state={start.isPending ? "working" : "idle"}
-              idle={st?.state === "failed" ? "다시 시작" : copy.start}
+              idle={st?.state === "failed" || status.isError ? "다시 시작" : copy.start}
               working="시작하는 중"
               onClick={() =>
                 start.mutate(undefined, {

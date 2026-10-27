@@ -54,15 +54,37 @@ export function SetupApp({ setup }: { setup: SetupState }) {
     setMenu(false);
   }, []);
 
-  // A step on screen that finished moves the wizard on, once its check has drawn.
+  // A step on screen that finished moves the wizard on once, after its check has drawn. Two signals lead
+  // here (the step's own screen and the server's state), so each visit to a step advances at most once.
+  const viewingRef = useRef(viewing);
+  viewingRef.current = viewing;
+  const advanced = useRef<StepId | null>(null);
   const onDone = useCallback(() => {
+    const from = viewingRef.current;
+    if (advanced.current === from) return;
+    advanced.current = from;
     setTimeout(() => {
-      setView(([now]) => {
-        const next = STEP_IDS[STEP_IDS.indexOf(now) + 1];
-        return next ? [next, 1] : [now, 1];
+      setView(([at, dir]) => {
+        const next = STEP_IDS[STEP_IDS.indexOf(at) + 1];
+        return at === from && next ? [next, 1] : [at, dir];
       });
     }, ADVANCE_MS);
   }, []);
+
+  // The server's state is the source of truth: when the step on screen turns done there, move on even if
+  // its screen missed the moment (a reload, a login that finished between polls).
+  const viewingDone = setup.steps[viewing].done;
+  const seen = useRef({ step: viewing, done: viewingDone });
+  useEffect(() => {
+    if (seen.current.step !== viewing) {
+      // A new visit: what was already done is not a new finish.
+      seen.current = { step: viewing, done: viewingDone };
+      advanced.current = null;
+      return;
+    }
+    if (viewingDone && !seen.current.done) onDone();
+    seen.current.done = viewingDone;
+  }, [viewing, viewingDone, onDone]);
 
   // The heading of the step on screen gets focus, so a keyboard or screen reader starts there.
   useEffect(() => {
