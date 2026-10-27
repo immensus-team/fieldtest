@@ -180,7 +180,7 @@ export function TopBar({
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5 sm:px-5">
         <div className="flex shrink-0 items-center gap-2">
           <span className="flex size-6 items-center justify-center rounded-md bg-foreground text-[11px] font-bold text-background">
-            U
+            F
           </span>
           <span className="text-[15px] font-semibold tracking-tight">fieldtest</span>
         </div>
