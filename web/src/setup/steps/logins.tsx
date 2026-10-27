@@ -1,5 +1,7 @@
+import { TriangleAlert } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLogin, useSendLoginCode, useStartLogin } from "@/api/setup";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +19,8 @@ type Copy = {
   done: (info: Record<string, unknown>) => string;
   // The browser sign-ins (Claude, Codex): what the page says after approving, and what to paste back.
   approve?: string;
+  // What will look like a failure after approving but is not.
+  notice?: { title: string; body: string };
   paste?: string;
   placeholder?: string;
 };
@@ -35,7 +39,11 @@ const COPY: Record<Kind, Copy> = {
     start: "Codex 로그인 시작",
     waiting: "로그인을 마무리하고 있습니다.",
     done: () => "Codex에 로그인했습니다.",
-    approve: "1. 승인 페이지에서 ChatGPT로 로그인하고 승인합니다. 끝나면 브라우저가 \"연결할 수 없음\" 페이지로 넘어갑니다. 정상입니다.",
+    approve: "1. 승인 페이지에서 ChatGPT로 로그인하고 승인합니다.",
+    notice: {
+      title: "승인하면 \"사이트에 연결할 수 없음\" 페이지가 뜹니다. 정상입니다.",
+      body: "그 창을 닫지 마세요. 그 페이지 주소창의 주소가 로그인을 마치는 데 필요합니다.",
+    },
     paste: "2. 그 페이지 주소창의 주소(http://127.0.0.1:1455/auth/callback?…)를 통째로 복사해 붙여 넣습니다.",
     placeholder: "http://127.0.0.1:1455/auth/callback?code=…",
   },
@@ -95,6 +103,13 @@ export function LoginStep({ kind, setup, headingRef, onDone, reopen }: StepProps
                   </a>
                 </Button>
               </div>
+              {copy.notice && (
+                <Alert className="border-warn/50 bg-warn/10 px-3 py-2.5 text-foreground *:[svg]:text-warn">
+                  <TriangleAlert />
+                  <AlertTitle className="font-semibold">{copy.notice.title}</AlertTitle>
+                  <AlertDescription className="text-foreground/80">{copy.notice.body}</AlertDescription>
+                </Alert>
+              )}
             </li>
             <li className="flex flex-col gap-2">
               <Label htmlFor={`${kind}-code`} className="font-medium">
