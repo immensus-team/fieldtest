@@ -23,19 +23,28 @@
 
 ## 설치
 
-### 1. 서버 만들기
+### 1. 서버 만들기와 접속
 
-[**Launch stack (서울 리전)**](https://console.aws.amazon.com/cloudformation/home?region=ap-northeast-2#/stacks/quickcreate?templateURL=https://fieldtest-templates-7ca67686.s3.ap-northeast-2.amazonaws.com/ec2.yaml&stackName=fieldtest-main&param_InstallName=main)
-링크를 열면 AWS 콘솔에 [`setup/ec2.yaml`](setup/ec2.yaml)이 채워진 스택 생성 화면이 나온다. 다른 리전은 링크의 `region=`을
-바꾸거나, CloudFormation에서 **스택 생성 → 템플릿 파일 업로드**로 같은 파일을 올린다.
+AWS CLI에 로그인한 터미널에서 실행한다. `shop` 자리에 설치 이름(영문 소문자·숫자·`-`)을 넣는다.
 
-- 스택 이름: `fieldtest-<설치 이름>` (예: `fieldtest-shop`)
-- `InstallName`: 설치 이름. 영문 소문자·숫자·`-`
-- `VpcId`, `SubnetId`: 인터넷이 되는 서브넷 (기본 VPC면 된다)
-- `LocalPort`: 내 컴퓨터에서 쓸 포트. 설치를 여러 개 동시에 열려면 설치마다 다르게 준다 (4310, 4311, …)
-- IAM 역할을 만든다는 확인란에 체크한다.
+```bash
+curl -fsSL https://raw.githubusercontent.com/immensus-team/fieldtest/main/setup/launch.sh | bash -s -- --name shop
+```
 
-서버가 뜨면 설치 스크립트가 10~15분 돈다. 인바운드 포트는 열지 않는다.
+기본 VPC에 서버를 만들고(`fieldtest-shop` 스택), 설치가 끝나면(10~15분) 터널을 열어 브라우저에 설치 마법사를 띄운다.
+터미널을 닫으면 연결이 끊긴다. 다시 열거나 지울 때는 스크립트를 받아 둔다.
+
+```bash
+curl -fsSLO https://raw.githubusercontent.com/immensus-team/fieldtest/main/setup/launch.sh
+bash launch.sh connect --name shop   # 대시보드 다시 열기
+bash launch.sh delete --name shop    # 서버와 스택이 만든 것 모두 삭제
+```
+
+리전은 AWS CLI 기본 리전(없으면 서울)을 쓰고 `--region`으로 바꾼다. 서버 타입은 `--type`(기본 `c8g.2xlarge`).
+
+콘솔에서 만들려면 [**Launch stack (서울 리전)**](https://console.aws.amazon.com/cloudformation/home?region=ap-northeast-2#/stacks/quickcreate?templateURL=https://fieldtest-templates-7ca67686.s3.ap-northeast-2.amazonaws.com/ec2.yaml&stackName=fieldtest-main&param_InstallName=main)
+링크로 같은 템플릿([`setup/ec2.yaml`](setup/ec2.yaml))을 연다. VPC·서브넷을 고르고 IAM 확인란에 체크한 뒤, 스택 Outputs의
+`ConnectCommand`를 내 컴퓨터에서 실행하고 `OpenUrl`을 연다. 인바운드 포트는 열지 않는다.
 
 AWS가 아닌 Ubuntu 24.04 서버라면:
 
@@ -45,12 +54,9 @@ sudo git -C /srv/fieldtest/code checkout --detach "$(git -C /srv/fieldtest/code 
 sudo bash /srv/fieldtest/code/setup/install.sh base --name <설치 이름>
 ```
 
-### 2. 접속
+접속은 `ssh -L 4310:127.0.0.1:4310 <서버>` 뒤 `http://127.0.0.1:4310`을 연다.
 
-스택의 Outputs에 있는 `ConnectCommand`를 내 컴퓨터에서 실행하고, `OpenUrl`(예: `http://127.0.0.1:4310`)을 연다.
-AWS가 아닌 서버는 `ssh -L 4310:127.0.0.1:4310 <서버>`로 연다.
-
-### 3. 설치 마법사
+### 2. 설치 마법사
 
 브라우저에서 단계를 따라간다. 단계마다 바로 확인하고, 창을 닫아도 이어서 할 수 있다.
 
@@ -91,7 +97,7 @@ sudo -iu fieldtest fieldtest recipe show
 sudo -iu fieldtest fieldtest update --now
 ```
 
-삭제는 CloudFormation 스택을 지우면 된다.
+삭제는 `bash launch.sh delete --name <설치 이름>`이나 CloudFormation에서 스택을 지우면 된다.
 
 ## 구조
 
