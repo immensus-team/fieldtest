@@ -193,7 +193,7 @@ test("the bootstrap prompt renders with every slot filled", () => {
 test("the implement session leaves the runner's checks to the runner in the PR body", async () => {
   const p = renderPrompt("implement", implementVars(screen, { shotsDir: "/s" }));
   const { currentRecipe } = await import("../lib/recipe.mjs");
-  const names = currentRecipe().checks.map((c) => c.name).join(", ");
-  assert.ok(p.includes(`실행기가 PR을 열기 전에 돌리는 검사: ${names}.`));
+  const commands = currentRecipe().checks.map((c) => `\`${c.command}\``).join(", ");
+  assert.ok(p.includes(`실행기가 PR을 열기 전에 돌리는 검사: ${commands}.`));
   assert.match(p, /돌리지 않았다고 쓰지 않는다/);
 });
