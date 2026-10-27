@@ -21,6 +21,12 @@ die() { printf '오류: %s\n' "$*" >&2; exit 1; }
 usage() { die "사용법: launch.sh [create|connect|delete] --name <설치 이름> [--region <리전>] [--type <인스턴스 타입>]"; }
 
 
+# Why the stack failed, from its first failed resource (an instance quota, a type the zone lacks).
+failure() {
+  "${AWS[@]}" cloudformation describe-stack-events --stack-name "$STACK" \
+    --query "reverse(StackEvents[?ResourceStatus=='CREATE_FAILED'])[0].ResourceStatusReason" --output text 2>/dev/null
+}
+
 output() { "${AWS[@]}" cloudformation describe-stacks --stack-name "$STACK" --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text; }
 
 # A local port nothing listens on, from 4310 up.
@@ -171,7 +177,13 @@ AWS=(aws --region "$REGION")
 
 case "$ACTION" in
   create)
-    if "${AWS[@]}" cloudformation describe-stacks --stack-name "$STACK" >/dev/null 2>&1; then
+    STATUS=$("${AWS[@]}" cloudformation describe-stacks --stack-name "$STACK" --query 'Stacks[0].StackStatus' --output text 2>/dev/null || true)
+    if [ "$STATUS" = ROLLBACK_COMPLETE ]; then
+      # A failed first try holds nothing; it is replaced.
+      say "실패해 남은 $STACK 을 지우고 다시 만듭니다."
+      "${AWS[@]}" cloudformation delete-stack --stack-name "$STACK"
+      "${AWS[@]}" cloudformation wait stack-delete-complete --stack-name "$STACK"
+    elif [ -n "$STATUS" ]; then
       say "$STACK 이(가) 이미 있습니다. 연결합니다."
       connect
       exit 0
@@ -190,7 +202,13 @@ case "$ACTION" in
       "ParameterKey=SubnetId,ParameterValue=$SUBNET" "ParameterKey=InstanceType,ParameterValue=$TYPE" \
       "ParameterKey=LocalPort,ParameterValue=$PORT" >/dev/null
     say "스택을 만드는 중입니다 (2~3분)."
-    "${AWS[@]}" cloudformation wait stack-create-complete --stack-name "$STACK" || die "스택을 만들지 못했습니다. CloudFormation 콘솔에서 $STACK 의 이벤트를 확인하세요."
+    if ! "${AWS[@]}" cloudformation wait stack-create-complete --stack-name "$STACK" 2>/dev/null; then
+      REASON=$(failure)
+      case "$REASON" in
+        *"vCPU"*) die "이 AWS 계정의 EC2 vCPU 한도가 모자랍니다. 더 작은 서버로 다시 실행하거나(--type c8g.xlarge) Service Quotas에서 한도를 늘리세요. 원인: $REASON" ;;
+        *) die "스택을 만들지 못했습니다. 원인: ${REASON:-CloudFormation 콘솔에서 $STACK 의 이벤트를 확인하세요}" ;;
+      esac
+    fi
     connect
     ;;
   connect)
