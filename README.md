@@ -107,4 +107,4 @@ npm test
 cd web && npm run typecheck && npm run build
 ```
 
-MIT 라이선스다. [LICENSE](LICENSE)를 본다.
+MIT 라이선스다. [LICENSE](LICENSE)를 본다. 문제나 제안은 GitHub Issues에 남긴다.
