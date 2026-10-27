@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "repo": "acme/shop",
+  "baseBranch": "main",
+  "product": { "name": "Acme Shop", "summary": "작은 가게가 주문과 재고를 관리하는 웹 앱", "role": "처음 쓰는 가게 직원" },
+  "app": { "kind": "web", "root": "web" },
+  "install": ["npm ci"],
+  "services": null,
+  "env": { "fake": "env", "real": [] },
+  "seed": [],
+  "start": { "command": "npm run dev -- --port {port}", "ready": "/", "timeoutSec": 120 },
+  "login": { "kind": "none" },
+  "explore": { "journeys": ["주문 받기: 새 주문을 만들고 결제 상태를 바꾼다."], "screens": "screens" },
+  "checks": [
+    { "name": "Lint", "command": "npm run lint", "stage": "fast" },
+    { "name": "Unit test", "command": "npm test", "stage": "full" }
+  ],
+  "e2e": { "cwd": "web", "dir": "web/e2e", "playwright": "npx playwright", "project": "chromium" },
+  "unit": null,
+  "paths": { "allowed": ["web/src/**", "web/e2e/**"], "forbidden": ["**/package.json"] },
+  "uiLanguage": "ko",
+  "autoRoute": null
+}

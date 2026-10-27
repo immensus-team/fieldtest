@@ -1,0 +1,101 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "judgments"
+  ],
+  "properties": {
+    "judgments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "steps",
+          "verdict",
+          "reason",
+          "duplicateOf",
+          "finding"
+        ],
+        "properties": {
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "defect",
+              "improvement",
+              "proposal",
+              "agent-error",
+              "intended",
+              "duplicate",
+              "trivial",
+              "not-reproduced"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "duplicateOf": {
+            "type": "string"
+          },
+          "finding": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "area",
+              "severity",
+              "kind",
+              "title",
+              "repro",
+              "expected",
+              "actual",
+              "evidence"
+            ],
+            "properties": {
+              "area": {
+                "type": "string"
+              },
+              "severity": {
+                "type": "string",
+                "enum": [
+                  "high",
+                  "medium",
+                  "low",
+                  "none"
+                ]
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "functional",
+                  "visual",
+                  "none"
+                ]
+              },
+              "title": {
+                "type": "string"
+              },
+              "repro": {
+                "type": "string"
+              },
+              "expected": {
+                "type": "string"
+              },
+              "actual": {
+                "type": "string"
+              },
+              "evidence": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

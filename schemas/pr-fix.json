@@ -1,0 +1,68 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "status",
+    "reason",
+    "comments",
+    "prBodyGaps",
+    "summary",
+    "uiChanged",
+    "changedTestsReason"
+  ],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "done",
+        "needs-human"
+      ]
+    },
+    "reason": {
+      "type": "string"
+    },
+    "comments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "commentId",
+          "action",
+          "reply"
+        ],
+        "properties": {
+          "commentId": {
+            "type": "integer"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "fixed",
+              "accepted-risk",
+              "disagree"
+            ]
+          },
+          "reply": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "prBodyGaps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "summary": {
+      "type": "string"
+    },
+    "uiChanged": {
+      "type": "boolean"
+    },
+    "changedTestsReason": {
+      "type": "string"
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "reason", "realKeys", "needsE2eSetup", "e2eSetup", "evidence"],
+  "properties": {
+    "status": { "type": "string", "enum": ["ok", "blocked"] },
+    "reason": { "type": "string" },
+    "realKeys": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "why"],
+        "properties": { "name": { "type": "string" }, "why": { "type": "string" } }
+      }
+    },
+    "needsE2eSetup": { "type": "boolean" },
+    "e2eSetup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "spec"],
+      "properties": { "title": { "type": "string" }, "spec": { "type": "string" } }
+    },
+    "evidence": { "type": "string" }
+  }
+}

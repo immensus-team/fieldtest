@@ -1,0 +1,14 @@
+{
+  "name": "fieldtest",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "bin": {
+    "fieldtest": "bin/fieldtest.mjs"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  }
+}

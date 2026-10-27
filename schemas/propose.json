@@ -1,0 +1,15 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "reason", "title", "area", "prTitle", "branchSlug", "forbidden", "spec"],
+  "properties": {
+    "status": { "type": "string", "enum": ["proposal", "drop"] },
+    "reason": { "type": "string" },
+    "title": { "type": "string" },
+    "area": { "type": "string" },
+    "prTitle": { "type": "string" },
+    "branchSlug": { "type": "string" },
+    "forbidden": { "type": "array", "items": { "type": "string" } },
+    "spec": { "type": "string" }
+  }
+}

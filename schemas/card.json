@@ -1,0 +1,12 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["summary", "expected", "actual", "cause", "fix"],
+  "properties": {
+    "summary": { "type": "string" },
+    "expected": { "type": "string" },
+    "actual": { "type": "string" },
+    "cause": { "type": "string" },
+    "fix": { "type": "array", "maxItems": 3, "items": { "type": "string" } }
+  }
+}

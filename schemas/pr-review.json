@@ -1,0 +1,23 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["summary", "findings"],
+  "properties": {
+    "summary": { "type": "string" },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["priority", "path", "line", "title", "body"],
+        "properties": {
+          "priority": { "type": "string", "enum": ["P0", "P1", "P2"] },
+          "path": { "type": "string" },
+          "line": { "type": "integer" },
+          "title": { "type": "string" },
+          "body": { "type": "string" }
+        }
+      }
+    }
+  }
+}

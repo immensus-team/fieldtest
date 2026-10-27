@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["key", "summary"],
+  "properties": {
+    "key": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,39}$" },
+    "summary": { "type": "string" }
+  }
+}

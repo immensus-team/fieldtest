@@ -1,0 +1,76 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "persona",
+    "goal",
+    "goalReached",
+    "summary",
+    "steps"
+  ],
+  "properties": {
+    "persona": {
+      "type": "string"
+    },
+    "goal": {
+      "type": "string"
+    },
+    "goalReached": {
+      "type": "boolean"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "n",
+          "area",
+          "url",
+          "probe",
+          "action",
+          "expected",
+          "actual",
+          "matched",
+          "screenshot",
+          "friction"
+        ],
+        "properties": {
+          "n": {
+            "type": "integer"
+          },
+          "area": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "probe": {
+            "type": "boolean"
+          },
+          "action": {
+            "type": "string"
+          },
+          "expected": {
+            "type": "string"
+          },
+          "actual": {
+            "type": "string"
+          },
+          "matched": {
+            "type": "boolean"
+          },
+          "screenshot": {
+            "type": "string"
+          },
+          "friction": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

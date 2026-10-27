@@ -1,0 +1,9 @@
+#!/bin/bash
+# Runs the CLI with the install's pinned Node 24 runtime (install.json). Link it into PATH:
+#   ln -s "$(jq -r .code /etc/fieldtest/install.json)/bin/fieldtest" ~/.local/bin/fieldtest
+INSTALL=${FIELDTEST_INSTALL:-/etc/fieldtest/install.json}
+CODE=$(jq -r '.code // "/srv/fieldtest/code"' "$INSTALL" 2>/dev/null || echo /srv/fieldtest/code)
+RUNTIME=$(jq -r '.runtime // "/srv/fieldtest/runtime"' "$INSTALL" 2>/dev/null || echo /srv/fieldtest/runtime)
+NODE=$RUNTIME/node/bin/node
+[ -x "$NODE" ] || NODE=node
+exec "$NODE" "$CODE/bin/fieldtest.mjs" "$@"
