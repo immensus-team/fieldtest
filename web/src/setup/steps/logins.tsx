@@ -9,7 +9,19 @@ import type { StepProps } from "./types";
 
 type Kind = "github" | "codex" | "claude";
 
-const COPY: Record<Kind, { title: string; lead: string; start: string; waiting: string; done: (info: Record<string, unknown>) => string }> = {
+type Copy = {
+  title: string;
+  lead: string;
+  start: string;
+  waiting: string;
+  done: (info: Record<string, unknown>) => string;
+  // The browser sign-ins (Claude, Codex): what the page says after approving, and what to paste back.
+  approve?: string;
+  paste?: string;
+  placeholder?: string;
+};
+
+const COPY: Record<Kind, Copy> = {
   github: {
     title: "GitHub 로그인",
     lead: "PR을 열고 merge할 GitHub 계정으로 로그인합니다. PR과 merge는 이 계정 이름으로 남습니다.",
@@ -21,8 +33,11 @@ const COPY: Record<Kind, { title: string; lead: string; start: string; waiting: 
     title: "Codex 연결",
     lead: "에이전트가 쓰는 Codex에 ChatGPT 계정으로 로그인합니다. 코드 리뷰와 PR 리뷰에 씁니다.",
     start: "Codex 로그인 시작",
-    waiting: "승인 페이지에서 코드를 넣고 승인하면 자동으로 넘어갑니다.",
+    waiting: "로그인을 마무리하고 있습니다.",
     done: () => "Codex에 로그인했습니다.",
+    approve: "1. 승인 페이지에서 ChatGPT로 로그인하고 승인합니다. 끝나면 브라우저가 \"연결할 수 없음\" 페이지로 넘어갑니다. 정상입니다.",
+    paste: "2. 그 페이지 주소창의 주소(http://127.0.0.1:1455/auth/callback?…)를 통째로 복사해 붙여 넣습니다.",
+    placeholder: "http://127.0.0.1:1455/auth/callback?code=…",
   },
   claude: {
     title: "Claude 연결",
@@ -30,6 +45,8 @@ const COPY: Record<Kind, { title: string; lead: string; start: string; waiting: 
     start: "Claude 로그인 시작",
     waiting: "코드를 확인하고 있습니다.",
     done: () => "Claude 토큰을 저장하고 확인했습니다.",
+    approve: "1. 승인 페이지에서 로그인하고 승인합니다.",
+    paste: "2. 페이지에 나온 코드를 붙여 넣습니다.",
   },
 };
 
@@ -70,7 +87,7 @@ export function LoginStep({ kind, setup, headingRef, onDone, reopen }: StepProps
         <Part>
           <ol className="flex flex-col gap-4 rounded-xl border bg-muted/40 p-4 text-sm">
             <li className="flex flex-col gap-2">
-              <span className="font-medium">1. 승인 페이지에서 로그인하고 승인합니다.</span>
+              <span className="font-medium">{copy.approve}</span>
               <div>
                 <Button asChild size="lg">
                   <a href={st.url} target="_blank" rel="noreferrer">
@@ -81,7 +98,7 @@ export function LoginStep({ kind, setup, headingRef, onDone, reopen }: StepProps
             </li>
             <li className="flex flex-col gap-2">
               <Label htmlFor={`${kind}-code`} className="font-medium">
-                2. 페이지에 나온 코드를 붙여 넣습니다.
+                {copy.paste}
               </Label>
               <form
                 className="flex flex-col gap-2 sm:flex-row"
@@ -92,7 +109,7 @@ export function LoginStep({ kind, setup, headingRef, onDone, reopen }: StepProps
                 }}
               >
                 <Shake token={tries || null} className="flex-1">
-                  <Input id={`${kind}-code`} value={code} onChange={(e) => setCode(e.target.value)} autoComplete="off" spellCheck={false} className="h-9 font-mono" />
+                  <Input id={`${kind}-code`} value={code} onChange={(e) => setCode(e.target.value)} autoComplete="off" spellCheck={false} placeholder={copy.placeholder} className="h-9 font-mono" />
                 </Shake>
                 <StatusButton type="submit" state={sendCode.isPending ? "working" : sendCode.isSuccess ? "done" : "idle"} idle="코드 보내기" working="보내는 중" done="보냄" />
               </form>

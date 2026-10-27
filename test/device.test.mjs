@@ -10,8 +10,21 @@ test("gh's device login gives the GitHub page and the one-time code", () => {
   assert.deepEqual(parseDevice("gh", text("gh")), { url: "https://github.com/login/device", code: "ABCD-1234" });
 });
 
-test("Codex's device login gives its page and code", () => {
-  assert.deepEqual(parseDevice("codex", text("codex")), { url: "https://auth.openai.com/codex/device", code: "WXYZ-12345" });
+test("Codex's browser login gives its sign-in address and asks for the address the browser lands on", () => {
+  const r = parseDevice("codex", text("codex-browser"));
+  assert.equal(r.code, null);
+  assert.match(r.url, /^https:\/\/auth\.openai\.com\/oauth\/authorize\?response_type=code&client_id=[\w-]+&redirect_uri=http%3A%2F%2F127\.0\.0\.1%3A1455%2Fauth%2Fcallback&/);
+  assert.match(r.url, /state=fakestate/);
+});
+
+test("only Codex's own callback address is passed on, as a local path", async () => {
+  const { codexCallback } = await import("../lib/device.mjs");
+  assert.equal(codexCallback("http://127.0.0.1:1455/auth/callback?code=abc&state=xyz"), "http://127.0.0.1:1455/auth/callback?code=abc&state=xyz");
+  assert.equal(codexCallback("  http://localhost:1455/auth/callback?code=a&state=b "), "http://127.0.0.1:1455/auth/callback?code=a&state=b");
+  assert.equal(codexCallback("https://evil.test/auth/callback?code=a"), null);
+  assert.equal(codexCallback("http://127.0.0.1:1455/other?code=a"), null);
+  assert.equal(codexCallback("http://127.0.0.1:9999/auth/callback?code=a"), null);
+  assert.equal(codexCallback("not a url"), null);
 });
 
 test("claude setup-token gives the sign-in address, wrapped lines joined, and asks for a code", () => {
