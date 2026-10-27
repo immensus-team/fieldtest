@@ -1,6 +1,7 @@
 #!/bin/bash
-# Run on your own computer (macOS or Linux) with the AWS CLI, the Session Manager plugin and an AWS
-# login. It creates a fieldtest server in your AWS account and opens its setup wizard:
+# Run on your own computer (macOS or Linux). It installs what it needs (the AWS CLI and the Session Manager
+# plugin, under ~/.fieldtest/tools, no sudo), signs you in to AWS in the browser (aws login), creates a
+# fieldtest server in your AWS account and opens its setup wizard:
 #   curl -fsSL https://raw.githubusercontent.com/immensus-team/fieldtest/main/setup/launch.sh | bash -s -- --name shop
 # Later:
 #   bash launch.sh connect --name shop    # open the dashboard again
@@ -10,35 +11,15 @@ set -euo pipefail
 # command that reads stdin would otherwise eat the rest of it.
 
 TEMPLATE=https://fieldtest-templates-7ca67686.s3.ap-northeast-2.amazonaws.com/ec2.yaml
+TOOLS=$HOME/.fieldtest/tools
+# aws login (console credentials in the browser) arrived in AWS CLI 2.32.0.
+AWS_MIN=2.32
 DOCS=https://github.com/immensus-team/fieldtest#readme
 
 say() { printf '%s\n' "$*"; }
 die() { printf '오류: %s\n' "$*" >&2; exit 1; }
 usage() { die "사용법: launch.sh [create|connect|delete] --name <설치 이름> [--region <리전>] [--type <인스턴스 타입>]"; }
 
-main() {
-ACTION=create
-case "${1:-}" in create|connect|delete) ACTION=$1; shift ;; esac
-NAME=""
-REGION=""
-TYPE=c8g.2xlarge
-while [ $# -gt 0 ]; do
-  case "$1" in
-    --name) NAME=${2:-}; shift 2 ;;
-    --region) REGION=${2:-}; shift 2 ;;
-    --type) TYPE=${2:-}; shift 2 ;;
-    *) usage ;;
-  esac
-done
-[[ "$NAME" =~ ^[a-z0-9-]{1,32}$ ]] || die "--name은 영문 소문자·숫자·-, 32자 이하입니다 (예: --name shop)"
-STACK=fieldtest-$NAME
-
-command -v aws >/dev/null || die "AWS CLI가 없습니다. https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html"
-command -v session-manager-plugin >/dev/null || die "Session Manager plugin이 없습니다. https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html"
-aws sts get-caller-identity >/dev/null 2>&1 || die "AWS에 로그인되어 있지 않습니다. aws configure 또는 aws sso login 뒤 다시 실행하세요."
-REGION=${REGION:-$(aws configure get region 2>/dev/null || true)}
-REGION=${REGION:-ap-northeast-2}
-AWS=(aws --region "$REGION")
 
 output() { "${AWS[@]}" cloudformation describe-stacks --stack-name "$STACK" --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text; }
 
@@ -47,6 +28,82 @@ free_port() {
   local p=4310
   while (exec 3<>"/dev/tcp/127.0.0.1/$p") 2>/dev/null; do p=$((p + 1)); done
   echo "$p"
+}
+
+# major.minor of `aws --version` at least AWS_MIN.
+aws_new_enough() {
+  local v
+  v=$(aws --version 2>/dev/null | sed -n 's#^aws-cli/\([0-9]*\)\.\([0-9]*\).*#\1 \2#p')
+  [ -n "$v" ] || return 1
+  set -- $v
+  [ "$1" -gt 2 ] || { [ "$1" -eq 2 ] && [ "$2" -ge "${AWS_MIN#2.}" ]; }
+}
+
+# The AWS CLI and the Session Manager plugin, from AWS's own downloads, in the user's home: nothing asks
+# for an administrator password. One already installed and new enough is used as it is.
+install_tools() {
+  local os arch tmp
+  os=$(uname -s)
+  arch=$(uname -m)
+  mkdir -p "$TOOLS/bin"
+  export PATH="$TOOLS/bin:$PATH"
+  tmp=$(mktemp -d)
+  if ! aws_new_enough; then
+    say "AWS CLI를 설치합니다 ($TOOLS)."
+    if [ "$os" = Darwin ]; then
+      curl -fsSL https://awscli.amazonaws.com/AWSCLIV2.pkg -o "$tmp/AWSCLIV2.pkg"
+      cat > "$tmp/choices.xml" <<XML
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <array>
+    <dict>
+      <key>choiceAttribute</key>
+      <string>customLocation</string>
+      <key>attributeSetting</key>
+      <string>$TOOLS</string>
+      <key>choiceIdentifier</key>
+      <string>default</string>
+    </dict>
+  </array>
+</plist>
+XML
+      installer -pkg "$tmp/AWSCLIV2.pkg" -target CurrentUserHomeDirectory -applyChoiceChangesXML "$tmp/choices.xml" >/dev/null
+      ln -sf "$TOOLS/aws-cli/aws" "$TOOLS/bin/aws"
+    else
+      command -v unzip >/dev/null || die "unzip이 필요합니다 (예: sudo apt install unzip)."
+      curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-$([ "$arch" = aarch64 ] && echo aarch64 || echo x86_64).zip" -o "$tmp/awscliv2.zip"
+      unzip -q "$tmp/awscliv2.zip" -d "$tmp"
+      "$tmp/aws/install" -i "$TOOLS/aws-cli" -b "$TOOLS/bin" --update >/dev/null
+    fi
+    aws_new_enough || die "AWS CLI를 설치하지 못했습니다."
+  fi
+  if ! command -v session-manager-plugin >/dev/null; then
+    say "Session Manager plugin을 설치합니다 ($TOOLS)."
+    if [ "$os" = Darwin ]; then
+      curl -fsSL "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/$([ "$arch" = arm64 ] && echo mac_arm64 || echo mac)/sessionmanager-bundle.zip" -o "$tmp/bundle.zip"
+      unzip -q "$tmp/bundle.zip" -d "$tmp"
+      mkdir -p "$TOOLS/sessionmanagerplugin"
+      cp -R "$tmp/sessionmanager-bundle/." "$TOOLS/sessionmanagerplugin/"
+      ln -sf "$TOOLS/sessionmanagerplugin/bin/session-manager-plugin" "$TOOLS/bin/session-manager-plugin"
+    else
+      command -v dpkg-deb >/dev/null || die "Session Manager plugin을 설치해 주세요: https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html"
+      curl -fsSL "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/$([ "$arch" = aarch64 ] && echo ubuntu_arm64 || echo ubuntu_64bit)/session-manager-plugin.deb" -o "$tmp/plugin.deb"
+      dpkg-deb -x "$tmp/plugin.deb" "$TOOLS/plugin-deb"
+      ln -sf "$TOOLS/plugin-deb/usr/local/sessionmanagerplugin/bin/session-manager-plugin" "$TOOLS/bin/session-manager-plugin"
+    fi
+    session-manager-plugin --version >/dev/null || die "Session Manager plugin을 설치하지 못했습니다."
+  fi
+  rm -rf "$tmp"
+}
+
+# Signed in already (a profile, keys, SSO), or a browser sign-in with the AWS console account.
+sign_in() {
+  aws sts get-caller-identity >/dev/null 2>&1 && return
+  say "브라우저에서 AWS 콘솔 계정으로 로그인합니다."
+  [ -n "$(aws configure get region 2>/dev/null || true)" ] || aws configure set region "$REGION"
+  aws login </dev/tty || die "AWS에 로그인하지 못했습니다. IAM 사용자라면 SignInLocalDevelopmentAccess 정책이 필요합니다: https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sign-in.html"
+  aws sts get-caller-identity >/dev/null 2>&1 || die "AWS 로그인을 확인하지 못했습니다."
 }
 
 open_url() {
@@ -87,6 +144,30 @@ connect() {
   say "이 창을 닫으면 연결이 끊깁니다. 다시 열려면: bash launch.sh connect --name $NAME --region $REGION"
   wait "$tunnel"
 }
+
+main() {
+ACTION=create
+case "${1:-}" in create|connect|delete) ACTION=$1; shift ;; esac
+NAME=""
+REGION=""
+TYPE=c8g.2xlarge
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --name) NAME=${2:-}; shift 2 ;;
+    --region) REGION=${2:-}; shift 2 ;;
+    --type) TYPE=${2:-}; shift 2 ;;
+    *) usage ;;
+  esac
+done
+[[ "$NAME" =~ ^[a-z0-9-]{1,32}$ ]] || die "--name은 영문 소문자·숫자·-, 32자 이하입니다 (예: --name shop)"
+STACK=fieldtest-$NAME
+
+[ "$(uname -s)" = Darwin ] || [ "$(uname -s)" = Linux ] || die "macOS나 Linux에서 실행하세요 (Windows는 WSL)."
+install_tools
+REGION=${REGION:-$(aws configure get region 2>/dev/null || true)}
+REGION=${REGION:-ap-northeast-2}
+sign_in
+AWS=(aws --region "$REGION")
 
 case "$ACTION" in
   create)

@@ -12,8 +12,7 @@
 
 | 무엇 | 쓰는 곳 |
 | --- | --- |
-| AWS 계정 (또는 Ubuntu 24.04 서버) | 에이전트가 도는 서버. 기본 `c8g.2xlarge`, 디스크 100 GB |
-| AWS CLI와 [Session Manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html) | 내 컴퓨터에서 대시보드 열기 |
+| AWS 계정 (또는 Ubuntu 24.04 서버), macOS나 Linux 터미널 | 에이전트가 도는 서버. 기본 `c8g.2xlarge`, 디스크 100 GB |
 | GitHub 계정 | 검사할 레포에 push 권한. PR과 merge가 이 계정 이름으로 남는다 |
 | Claude 구독 | 탐색·판정·구현 세션 |
 | ChatGPT 구독 (Codex) | 코드 검토와 PR 리뷰 |
@@ -25,7 +24,9 @@
 
 ### 1. 서버 만들기와 접속
 
-AWS CLI에 로그인한 터미널에서 실행한다. `shop` 자리에 설치 이름(영문 소문자·숫자·`-`)을 넣는다.
+macOS나 Linux 터미널에서 실행한다. `shop` 자리에 설치 이름(영문 소문자·숫자·`-`)을 넣는다. 필요한 AWS CLI와
+Session Manager plugin은 스크립트가 `~/.fieldtest/tools`에 설치하고(관리자 비밀번호 없음), AWS 로그인은 브라우저에서
+콘솔 계정으로 한다(`aws login`). IAM 사용자는 `SignInLocalDevelopmentAccess` 정책이 있어야 한다.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/immensus-team/fieldtest/main/setup/launch.sh | bash -s -- --name shop
