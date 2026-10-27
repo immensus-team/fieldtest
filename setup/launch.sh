@@ -167,7 +167,8 @@ install_step() {
   local out
   out=$("${AWS[@]}" ssm get-command-invocation --command-id "$STEP_CMD" --instance-id "$1" --query '[Status,StandardOutputContent]' --output text 2>/dev/null || true)
   case "$out" in
-    Success*) STEP=$(printf '%s' "$out" | sed '1s/^Success[[:space:]]*//' | head -n 1); STEP_CMD="" ;;
+    # The step's head: "Docker rootless (…). …" reads as "Docker rootless".
+    Success*) STEP=$(printf '%s' "$out" | sed '1s/^Success[[:space:]]*//' | head -n 1 | sed -e 's/ (.*//' -e 's/\. .*//' -e 's/ →.*//' | cut -c1-60); STEP_CMD="" ;;
     Pending* | InProgress* | Delayed* | "") ;;
     *) STEP_CMD="" ;;
   esac
