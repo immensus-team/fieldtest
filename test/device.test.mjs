@@ -63,3 +63,27 @@ test("a pasted code is typed first and Enter goes separately, so the prompt subm
   await typeCode({ write: (s) => writes.push(s) }, "  abc#def \n", 10);
   assert.deepEqual(writes, ["abc#def", "\r"]);
 });
+
+test("the pasted callback is followed to Codex's success page, which ends its login", async () => {
+  const { createServer } = await import("node:http");
+  const { deliverCallback } = await import("../lib/device.mjs");
+  const hits = [];
+  const server = createServer((req, res) => {
+    hits.push(req.url.split("?")[0]);
+    if (req.url.startsWith("/auth/callback")) {
+      res.writeHead(302, { location: "/success" });
+      return res.end();
+    }
+    res.end("ok");
+  });
+  await new Promise((ok) => server.listen(0, "127.0.0.1", ok));
+  let r;
+  try {
+    r = await deliverCallback(`http://127.0.0.1:${server.address().port}/auth/callback?code=a&state=b`);
+  } finally {
+    server.close();
+    server.closeAllConnections();
+  }
+  assert.deepEqual(r, { ok: true });
+  assert.deepEqual(hits, ["/auth/callback", "/success"]);
+});
