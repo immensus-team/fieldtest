@@ -135,7 +135,8 @@ connect() {
   "${AWS[@]}" ssm start-session --target "$id" --document-name AWS-StartPortForwardingSession \
     --parameters "{\"portNumber\":[\"4310\"],\"localPortNumber\":[\"$port\"]}" </dev/null >/dev/null &
   tunnel=$!
-  trap 'kill $tunnel 2>/dev/null' EXIT INT TERM
+  # The session-manager-plugin under aws holds the port; it goes with its parent.
+  trap 'pkill -TERM -P $tunnel 2>/dev/null; kill $tunnel 2>/dev/null' EXIT HUP INT TERM
   say "설치가 끝나기를 기다립니다. 처음 설치는 10~15분 걸립니다."
   local waited=0
   until curl -fs -o /dev/null "$url/"; do
