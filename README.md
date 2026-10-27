@@ -32,13 +32,13 @@ Session Manager plugin은 스크립트가 `~/.fieldtest/tools`에 설치하고(�
 curl -fsSL https://raw.githubusercontent.com/immensus-team/fieldtest/main/setup/launch.sh | bash -s -- --name shop
 ```
 
-기본 VPC에 서버를 만들고(`fieldtest-shop` 스택), 설치가 끝나면(10~15분) 터널을 열어 브라우저에 설치 마법사를 띄운다.
-터미널을 닫으면 연결이 끊긴다. 다시 열거나 지울 때는 스크립트를 받아 둔다.
+기본 VPC에 서버를 만들고(`fieldtest-shop` 스택), 단계마다 경과 시간과 서버에서 설치 중인 항목을 보여 준다. 설치가
+끝나면(10분 안팎) 터널을 열어 브라우저에 설치 마법사를 띄운다(`http://127.0.0.1:4310`, 사용 중이면 다음 빈 포트).
+터미널을 닫으면 연결이 끊긴다. 다시 열거나 지울 때도 같은 명령에 인자만 바꾼다.
 
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/immensus-team/fieldtest/main/setup/launch.sh
-bash launch.sh connect --name shop   # 대시보드 다시 열기
-bash launch.sh delete --name shop    # 서버와 스택이 만든 것 모두 삭제
+curl -fsSL https://raw.githubusercontent.com/immensus-team/fieldtest/main/setup/launch.sh | bash -s -- connect --name shop  # 다시 열기
+curl -fsSL https://raw.githubusercontent.com/immensus-team/fieldtest/main/setup/launch.sh | bash -s -- delete --name shop   # 서버 삭제
 ```
 
 리전은 AWS CLI 기본 리전(없으면 서울)을 쓰고 `--region`으로 바꾼다. 서버 타입은 `--type`(기본 `c8g.2xlarge`).
@@ -98,7 +98,7 @@ sudo -iu fieldtest fieldtest recipe show
 sudo -iu fieldtest fieldtest update --now
 ```
 
-삭제는 `bash launch.sh delete --name <설치 이름>`이나 CloudFormation에서 스택을 지우면 된다.
+삭제는 위의 `delete` 명령이나 CloudFormation에서 스택을 지우면 된다.
 
 ## 구조
 

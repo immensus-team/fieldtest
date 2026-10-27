@@ -4,8 +4,8 @@
 # fieldtest server in your AWS account and opens its setup wizard:
 #   curl -fsSL https://raw.githubusercontent.com/immensus-team/fieldtest/main/setup/launch.sh | bash -s -- --name shop
 # Later:
-#   bash launch.sh connect --name shop    # open the dashboard again
-#   bash launch.sh delete --name shop     # delete the server and everything the stack made
+#   ... | bash -s -- connect --name shop    # open the dashboard again
+#   ... | bash -s -- delete --name shop     # delete the server and everything the stack made
 set -euo pipefail
 # Everything runs from main at the bottom: under `curl | bash` the script is read from stdin, and a
 # command that reads stdin would otherwise eat the rest of it.
@@ -16,8 +16,48 @@ TOOLS=$HOME/.fieldtest/tools
 AWS_MIN=2.32
 DOCS=https://github.com/immensus-team/fieldtest#readme
 
+RERUN="curl -fsSL https://raw.githubusercontent.com/immensus-team/fieldtest/main/setup/launch.sh | bash -s --"
+
+# A terminal gets one line per stage, redrawn every second; a log gets a line each time it changes.
+TTY=0
+[ -t 1 ] && TTY=1
+STAGE=0
+TOTAL=0
+STAGE_NAME=""
+STAGE_START=0
+LAST=""
+
 say() { printf '%s\n' "$*"; }
-die() { printf '오류: %s\n' "$*" >&2; exit 1; }
+die() {
+  [ "$TTY" = 1 ] && [ -n "$LAST" ] && printf '\n'
+  printf '오류: %s\n' "$*" >&2
+  exit 1
+}
+
+since() {
+  local s=$(($(date +%s) - $1))
+  if [ "$s" -lt 60 ]; then echo "${s}초"; else echo "$((s / 60))분 $((s % 60))초"; fi
+}
+
+stage() {
+  STAGE=$((STAGE + 1))
+  STAGE_NAME=$1
+  STAGE_START=$(date +%s)
+  LAST=""
+  show ""
+}
+
+show() {
+  local line="[$STAGE/$TOTAL] $STAGE_NAME${1:+: $1}"
+  if [ "$TTY" = 1 ]; then printf '\r\033[K%s · %s' "$line" "$(since "$STAGE_START")"; elif [ "$line" != "$LAST" ]; then say "$line"; fi
+  LAST=$line
+}
+
+stage_done() {
+  [ "$TTY" = 1 ] && printf '\r\033[K'
+  say "[$STAGE/$TOTAL] $STAGE_NAME ✓ $(since "$STAGE_START")"
+  LAST=""
+}
 usage() { die "사용법: launch.sh [create|connect|delete] --name <설치 이름> [--region <리전>] [--type <인스턴스 타입>]"; }
 
 
@@ -116,39 +156,67 @@ open_url() {
   if command -v open >/dev/null; then open "$1"; elif command -v xdg-open >/dev/null; then xdg-open "$1" >/dev/null 2>&1; else say "브라우저에서 $1 을 여세요."; fi
 }
 
+# The newest step line (`== ...`) of the server's install log, read over SSM. Empty until install.sh runs.
+install_step() {
+  if [ -z "$STEP_CMD" ]; then
+    STEP_CMD=$("${AWS[@]}" ssm send-command --instance-ids "$1" --document-name AWS-RunShellScript \
+      --parameters '{"commands":["grep -h \"^== \" /var/log/fieldtest-install.log | tail -n 1 | cut -c4- | cut -c1-70"]}' \
+      --query Command.CommandId --output text 2>/dev/null || true)
+    return
+  fi
+  local out
+  out=$("${AWS[@]}" ssm get-command-invocation --command-id "$STEP_CMD" --instance-id "$1" --query '[Status,StandardOutputContent]' --output text 2>/dev/null || true)
+  case "$out" in
+    Success*) STEP=$(printf '%s' "$out" | sed '1s/^Success[[:space:]]*//' | head -n 1); STEP_CMD="" ;;
+    Pending* | InProgress* | Delayed* | "") ;;
+    *) STEP_CMD="" ;;
+  esac
+}
+
 # The SSM tunnel to the server's dashboard, then the browser once the wizard answers. The tunnel lives as
 # long as this terminal.
 connect() {
-  local id port url tunnel
+  local id port url tunnel t0 waited
   id=$(output InstanceId)
   port=$(output OpenUrl | sed 's/.*://')
   [ -n "$id" ] && [ "$id" != None ] || die "$STACK 스택을 찾지 못했습니다 ($REGION)."
   (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null && port=$(free_port)
   url=http://127.0.0.1:$port
-  say "서버 연결을 기다립니다 ($id)."
-  local tries=0
+
+  stage "서버 연결"
+  t0=$(date +%s)
   until [ "$("${AWS[@]}" ssm describe-instance-information --filters "Key=InstanceIds,Values=$id" --query 'InstanceInformationList[0].PingStatus' --output text 2>/dev/null)" = Online ]; do
-    tries=$((tries + 1))
-    [ "$tries" -lt 90 ] || die "15분이 지나도 서버가 SSM에 연결되지 않습니다. 서브넷이 인터넷에 나갈 수 있는지 확인하세요."
-    sleep 10
+    [ $(($(date +%s) - t0)) -lt 900 ] || die "15분이 지나도 서버가 SSM에 연결되지 않습니다. 서브넷이 인터넷에 나갈 수 있는지 확인하세요."
+    for _ in 1 2 3 4 5; do show ""; sleep 1; done
   done
+  stage_done
+
   "${AWS[@]}" ssm start-session --target "$id" --document-name AWS-StartPortForwardingSession \
     --parameters "{\"portNumber\":[\"4310\"],\"localPortNumber\":[\"$port\"]}" </dev/null >/dev/null &
   tunnel=$!
   # The session-manager-plugin under aws holds the port; it goes with its parent.
   trap 'pkill -TERM -P $tunnel 2>/dev/null; kill $tunnel 2>/dev/null' EXIT HUP INT TERM
-  say "설치가 끝나기를 기다립니다. 처음 설치는 10~15분 걸립니다."
-  local waited=0
-  until curl -fs -o /dev/null "$url/"; do
-    kill -0 "$tunnel" 2>/dev/null || die "터널이 끊겼습니다. 다시 실행하세요: bash launch.sh connect --name $NAME"
-    sleep 15
-    waited=$((waited + 15))
-    [ $((waited % 60)) -eq 0 ] && say "  ${waited}초째 기다리는 중"
+
+  stage "$INSTALL_STAGE"
+  STEP_CMD=""
+  STEP=""
+  waited=0
+  until curl -fs -m 3 -o /dev/null "$url/"; do
+    kill -0 "$tunnel" 2>/dev/null || die "터널이 끊겼습니다. 다시 열려면: $RERUN connect --name $NAME --region $REGION"
+    [ $((waited % 10)) -eq 0 ] && install_step "$id"
+    show "${STEP:-준비 중}"
+    sleep 1
+    waited=$((waited + 1))
     [ "$waited" -lt 2400 ] || die "40분이 지나도 응답이 없습니다. 설치 로그: $(output InstallLog)"
   done
-  say "열었습니다: $url"
+  stage_done
+
+  stage "설치 화면 열기"
   open_url "$url"
-  say "이 창을 닫으면 연결이 끊깁니다. 다시 열려면: bash launch.sh connect --name $NAME --region $REGION"
+  stage_done
+  say ""
+  say "열었습니다: $url"
+  say "이 창을 닫으면 연결이 끊깁니다. 다시 열려면: $RERUN connect --name $NAME --region $REGION"
   wait "$tunnel"
 }
 
@@ -186,6 +254,8 @@ case "$ACTION" in
       "${AWS[@]}" cloudformation wait stack-delete-complete --stack-name "$STACK"
     elif [ -n "$STATUS" ]; then
       say "$STACK 이(가) 이미 있습니다. 연결합니다."
+      TOTAL=3
+      INSTALL_STAGE="대시보드 응답 기다리기"
       connect
       exit 0
     fi
@@ -202,17 +272,31 @@ case "$ACTION" in
       --parameters "ParameterKey=InstallName,ParameterValue=$NAME" "ParameterKey=VpcId,ParameterValue=$VPC" \
       "ParameterKey=SubnetId,ParameterValue=$SUBNET" "ParameterKey=InstanceType,ParameterValue=$TYPE" \
       "ParameterKey=LocalPort,ParameterValue=$PORT" >/dev/null
-    say "스택을 만드는 중입니다 (2~3분)."
-    if ! "${AWS[@]}" cloudformation wait stack-create-complete --stack-name "$STACK" 2>/dev/null; then
-      REASON=$(failure)
-      case "$REASON" in
-        *"vCPU"*) die "이 AWS 계정의 EC2 vCPU 한도가 모자랍니다. 더 작은 서버로 다시 실행하거나(--type c8g.xlarge) Service Quotas에서 한도를 늘리세요. 원인: $REASON" ;;
-        *) die "스택을 만들지 못했습니다. 원인: ${REASON:-CloudFormation 콘솔에서 $STACK 의 이벤트를 확인하세요}" ;;
+    TOTAL=4
+    INSTALL_STAGE="설치"
+    stage "서버 만들기"
+    while :; do
+      STATUS=$("${AWS[@]}" cloudformation describe-stacks --stack-name "$STACK" --query 'Stacks[0].StackStatus' --output text 2>/dev/null || true)
+      case "$STATUS" in
+        CREATE_COMPLETE) break ;;
+        CREATE_IN_PROGRESS) ;;
+        *)
+          # A failure is known as soon as the rollback starts; no need to wait for it.
+          REASON=$(failure)
+          case "$REASON" in
+            *"vCPU"*) die "이 AWS 계정의 EC2 vCPU 한도가 모자랍니다. 더 작은 서버로 다시 실행하거나(--type c8g.xlarge) Service Quotas에서 한도를 늘리세요. 원인: $REASON" ;;
+            *) die "스택을 만들지 못했습니다 ($STATUS). 원인: ${REASON:-CloudFormation 콘솔에서 $STACK 의 이벤트를 확인하세요}" ;;
+          esac
+          ;;
       esac
-    fi
+      for _ in 1 2 3 4 5; do show ""; sleep 1; done
+    done
+    stage_done
     connect
     ;;
   connect)
+    TOTAL=3
+    INSTALL_STAGE="대시보드 응답 기다리기"
     connect
     ;;
   delete)
