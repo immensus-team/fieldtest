@@ -141,7 +141,7 @@ function AutoMerge() {
         </div>
         <p className="text-xs text-muted-foreground">
           {on
-            ? `재현 테스트가 있는 low·medium 기능 수정 중 소스 ${rule.files}파일·${rule.lines}줄 이하${rule.copyCheck ? ", 화면 문구 변경 없음" : ""}이면 사람 없이 PR을 열고 merge합니다. 나머지는 사람이 정합니다.`
+            ? `작은 기능 수정은 사람 확인 없이 merge합니다 (파일 ${rule.files}개·${rule.lines}줄 이하${rule.copyCheck ? ", 화면 문구 변경 없음" : ""}).`
             : "모든 티켓이 사람의 진행과 머지를 기다립니다."}
         </p>
         {set.error && <p className="text-xs text-destructive">바꾸지 못했습니다: {set.error.message}</p>}
