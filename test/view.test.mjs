@@ -160,3 +160,10 @@ test("the banner says when the recipe is being repaired, failed or waits for app
   assert.match(text({ awaitingApproval: ["checks"] })[0], /레시피 변경 승인 대기.*fieldtest recipe show/);
   assert.deepEqual(text({ phase: "repair", stage: "promoted" }), []);
 });
+
+test("the banner shows a loop that keeps failing, which Slack alone used to report", async () => {
+  const { alertsOf } = await import("../lib/view.mjs");
+  const text = (loop) => alertsOf([], [], false, null, {}, loop).map((a) => a.text);
+  assert.match(text({ failures: 3, lastError: { message: "claude 종료 1\n상세" } })[0], /에이전트 루프 오류 3회 연속: claude 종료 1$/);
+  assert.deepEqual(text({ failures: 2, lastError: { message: "x" } }), []);
+});

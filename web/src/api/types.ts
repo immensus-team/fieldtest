@@ -326,6 +326,7 @@ export interface ServerStatus {
   memory: { totalBytes: number; availableBytes: number; swapTotalBytes: number; swapUsedBytes: number };
   disk: { path: string; totalBytes: number; freeBytes: number };
   services: ServerService[];
+  slack: boolean; // false: Slack was skipped in the wizard
   checks: ServerCheckTime[];
   groups: ServerProcessGroup[];
   top: ServerProcess[];

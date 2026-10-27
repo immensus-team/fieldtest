@@ -155,7 +155,7 @@ export function DeviceCode({ url, code, waiting }: { url: string; code: string; 
 }
 
 // A done step's summary with a way to do it again.
-export function DoneNote({ children, onRedo }: { children: ReactNode; onRedo?: () => void }) {
+export function DoneNote({ children, onRedo, redo = "다시 하기" }: { children: ReactNode; onRedo?: () => void; redo?: string }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ok/30 bg-ok/5 p-4">
       <p className="flex items-center gap-2 text-sm" aria-live="polite">
@@ -166,7 +166,7 @@ export function DoneNote({ children, onRedo }: { children: ReactNode; onRedo?: (
       </p>
       {onRedo && (
         <Button type="button" variant="ghost" size="sm" onClick={onRedo}>
-          다시 하기
+          {redo}
         </Button>
       )}
     </div>

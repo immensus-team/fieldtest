@@ -82,6 +82,7 @@ export const useChooseRepo = () => useSetupMutation((repo: string) => postJson<{
 
 export const useSlackManifest = () => useQuery({ queryKey: ["slack-manifest"], queryFn: () => getJson<{ manifest: unknown; url: string }>("/api/setup/slack/manifest") });
 export const useSaveSlack = () => useSetupMutation((tokens: { botToken: string; appToken: string }) => postJson<{ team: string; bot: string }>("/api/setup/slack", tokens));
+export const useSkipSlack = () => useSetupMutation(() => postJson("/api/setup/slack/skip"));
 export const useSlackStatus = (enabled: boolean) =>
   useQuery({ queryKey: ["slack-status"], queryFn: () => getJson<{ tokens: boolean; owner: boolean }>("/api/setup/slack"), enabled, refetchInterval: 2000 });
 

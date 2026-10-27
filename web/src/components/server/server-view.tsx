@@ -1,7 +1,8 @@
-import { AlertTriangle, CheckCircle2, ChevronDown, Clock, Pause, Play, XCircle } from "lucide-react";
+import { AlertTriangle, BellOff, CheckCircle2, ChevronDown, Clock, Pause, Play, XCircle } from "lucide-react";
 import { AnimatePresence, motion, stagger, useReducedMotion } from "motion/react";
 import { type ReactNode, useMemo, useState } from "react";
 import { useServer } from "@/api/client";
+import { useReopen } from "@/api/setup";
 import type { ServerCheckTime, ServerProcessGroup, ServerService, ServerStatus } from "@/api/types";
 import { ErrorState } from "@/components/error-state";
 import { Button } from "@/components/ui/button";
@@ -98,6 +99,23 @@ function ServiceAlerts({ services }: { services: ServerService[] }) {
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+// An install that skipped Slack: alerts reach only this dashboard. Connecting reopens the wizard's Slack
+// step; its start step then turns the Slack service on.
+function SlackOff() {
+  const reopen = useReopen();
+  return (
+    <motion.div variants={rise}>
+      <Card size="sm" className="flex-row flex-wrap items-center gap-3 px-4">
+        <BellOff className="size-4 shrink-0 text-muted-foreground" />
+        <span className="flex-1 text-sm text-muted-foreground">Slack 알림을 쓰지 않습니다. 결정할 티켓과 오류는 대시보드에서만 봅니다.</span>
+        <Button type="button" variant="outline" size="sm" onClick={() => reopen.mutate("slack")} disabled={reopen.isPending}>
+          Slack 연결
+        </Button>
+      </Card>
+    </motion.div>
   );
 }
 
@@ -340,6 +358,7 @@ export function ServerView() {
     <motion.div variants={grid} initial={reduce ? false : "hidden"} animate="show" className="mx-auto flex max-w-3xl flex-col gap-3">
       <Header s={s} freshness={<Freshness updatedAt={server.dataUpdatedAt} failed={server.isRefetchError} live={live} onLive={setLive} />} />
       <ServiceAlerts services={s.services} />
+      {!s.slack && <SlackOff />}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
         <Metric title="CPU" value={s.cpu.percent}>
           <Sparkline values={history.map((h) => h?.cpu ?? null)} max={100} className="text-glow" label={`최근 5분 CPU, 지금 ${pct(s.cpu.percent)}%`} />

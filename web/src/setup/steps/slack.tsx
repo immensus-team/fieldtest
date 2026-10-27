@@ -1,7 +1,7 @@
 import { ChevronDown, ExternalLink } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
-import { useSaveSlack, useSlackManifest, useSlackStatus } from "@/api/setup";
+import { useSaveSlack, useSkipSlack, useSlackManifest, useSlackStatus } from "@/api/setup";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ export function SlackStep({ setup, headingRef, onDone, reopen }: StepProps) {
   const done = setup.steps.slack.done;
   const manifest = useSlackManifest();
   const save = useSaveSlack();
+  const skip = useSkipSlack();
   const status = useSlackStatus(!done);
   const [bot, setBot] = useState("");
   const [app, setApp] = useState("");
@@ -24,10 +25,13 @@ export function SlackStep({ setup, headingRef, onDone, reopen }: StepProps) {
   }, [status.data?.owner, done, onDone]);
 
   if (done) {
+    const skipped = setup.steps.slack.info.skipped;
     return (
-      <StepBody headingRef={headingRef} title="Slack 연결" lead="사람이 결정할 티켓과 오류만 DM으로 받습니다.">
+      <StepBody headingRef={headingRef} title="Slack 연결" lead={skipped ? "알림은 대시보드에서만 봅니다." : "사람이 결정할 티켓과 오류만 DM으로 받습니다."}>
         <Part>
-          <DoneNote onRedo={() => reopen("slack")}>Slack 앱이 연결되었고 확인 DM을 보냈습니다.</DoneNote>
+          <DoneNote onRedo={() => reopen("slack")} redo={skipped ? "Slack 연결" : undefined}>
+            {skipped ? "Slack 없이 진행합니다." : "Slack 앱이 연결되었고 확인 DM을 보냈습니다."}
+          </DoneNote>
         </Part>
       </StepBody>
     );
@@ -86,7 +90,7 @@ export function SlackStep({ setup, headingRef, onDone, reopen }: StepProps) {
           </div>
         </form>
       </Part>
-      <StepError title="Slack을 연결하지 못했습니다" error={save.error?.message} />
+      <StepError title="Slack을 연결하지 못했습니다" error={save.error?.message ?? skip.error?.message} />
       {(save.isSuccess || status.data?.tokens) && (
         <Part>
           <h3 className="text-sm font-medium">3. 봇에게 DM 보내기</h3>
@@ -96,6 +100,14 @@ export function SlackStep({ setup, headingRef, onDone, reopen }: StepProps) {
           </p>
         </Part>
       )}
+      <Part>
+        <div className="flex flex-wrap items-center gap-3 border-t pt-4">
+          <Button type="button" variant="ghost" onClick={() => skip.mutate(undefined, { onSuccess: onDone })} disabled={skip.isPending}>
+            Slack 없이 계속
+          </Button>
+          <p className="text-xs text-muted-foreground">결정할 티켓과 오류는 대시보드에서만 봅니다. 나중에 서버 화면에서 연결할 수 있습니다.</p>
+        </div>
+      </Part>
     </StepBody>
   );
 }

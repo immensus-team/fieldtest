@@ -45,3 +45,10 @@ test("processes are grouped by what they run", () => {
   assert.equal(classify("node /srv/fieldtest/code/bin/fieldtest.mjs web").kind, "fieldtest");
   assert.equal(classify("bash").kind, "other");
 });
+
+test("the Slack service is listed only when Slack is connected", async () => {
+  const { unitsFor } = await import("../lib/host.mjs");
+  assert.ok(unitsFor(true).some((u) => u.unit === "fieldtest-slack.service"));
+  assert.ok(!unitsFor(false).some((u) => u.unit === "fieldtest-slack.service"));
+  assert.ok(unitsFor(false).some((u) => u.unit === "fieldtest.service"));
+});

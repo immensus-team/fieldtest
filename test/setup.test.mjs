@@ -52,3 +52,12 @@ test("the wizard's state is not writable by the agent's group, even under umask 
   process.umask(old);
   assert.equal(statSync(paths.setup).mode & 0o777, 0o644);
 });
+
+test("connecting Slack later voids the start step, so start.sh turns the Slack service on", () => {
+  for (const s of STEPS) completeStep(s, {});
+  invalidate("slack");
+  const st = readSetup().steps;
+  assert.equal(st.slack.done, false);
+  assert.equal(st.start.done, false);
+  assert.equal(st.bootstrap.done, true);
+});

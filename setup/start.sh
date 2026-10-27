@@ -13,7 +13,10 @@ cd "$DATA"
 AGENT_HOME=$(getent passwd "$AGENT" | cut -d: -f6)
 AS_AGENT=(sudo -n -u "$AGENT" -H env COREPACK_ENABLE_DOWNLOAD_PROMPT=0 GIT_TERMINAL_PROMPT=0 "PATH=$RUNTIME/node/bin:$AGENT_HOME/.local/bin:/usr/bin:/bin:/usr/sbin:/sbin")
 UNITS=$HOME/.config/systemd/user
-WORKERS=(fieldtest-watch.timer fieldtest-slack.service fieldtest.service)
+WORKERS=(fieldtest-watch.timer fieldtest.service)
+# Slack runs only once its owner is set; an install that skipped Slack has no tokens.
+SLACK_ENV=$HOME/.config/fieldtest/slack.env
+if grep -q '^SLACK_USER_ID=.' "$SLACK_ENV" 2>/dev/null; then WORKERS+=(fieldtest-slack.service); fi
 
 step() { printf '\n== %s\n' "$*"; }
 
@@ -164,6 +167,7 @@ chmod -R go-w "$TOOL/web"
 stop_workers
 systemctl --user daemon-reload
 systemctl --user enable --now "${WORKERS[@]}"
+[[ " ${WORKERS[*]} " == *" fieldtest-slack.service "* ]] || systemctl --user disable fieldtest-slack.service 2>/dev/null || true
 systemctl --user enable fieldtest-web.service
 # From the wizard (FIELDTEST_FROM_WEB) the running dashboard already serves this code; a restart here
 # would end this script. From a terminal (an update), restart it last.

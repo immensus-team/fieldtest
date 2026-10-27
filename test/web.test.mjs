@@ -209,3 +209,15 @@ test("reopening the repo step drops the old recipe, its draft and the bootstrap 
   assert.deepEqual(JSON.parse(readFileSync(paths.recipeState, "utf8")), {});
   for (const step of STEPS) completeStep(step, {});
 });
+
+test("skipping Slack finishes its step without tokens", async () => {
+  invalidate("slack");
+  assert.equal((await call("/api/setup/slack/skip", { method: "POST" })).status, 403);
+  const r = await call("/api/setup/slack/skip", { method: "POST", token: TOKEN });
+  assert.equal(r.status, 200);
+  const state = await (await call("/api/setup/state")).json();
+  assert.equal(state.steps.slack.done, true);
+  assert.equal(state.steps.slack.info.skipped, true);
+  assert.equal(state.current, "start");
+  for (const step of STEPS) completeStep(step, {});
+});
