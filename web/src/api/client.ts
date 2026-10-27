@@ -167,3 +167,19 @@ export function useServer(live: boolean) {
     placeholderData: (previous) => previous,
   });
 }
+
+// Auto-merge: the approved recipe's autoRoute limits, null when every ticket goes to the human.
+export type AutoRoute = { files: number; lines: number; copyCheck: boolean };
+export type Settings = { autoRoute: AutoRoute | null; rule: AutoRoute };
+
+export function useSettings() {
+  return useQuery({ queryKey: ["settings"], queryFn: () => getJson<Settings>("/api/settings") });
+}
+
+export function useSetAutoMerge() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (on: boolean) => postJson<Settings>("/api/settings/auto-merge", { on }),
+    onSuccess: (data) => client.setQueryData(["settings"], data),
+  });
+}

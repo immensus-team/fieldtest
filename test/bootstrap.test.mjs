@@ -193,6 +193,25 @@ test("the setup page sees when the bootstrap began, when its stage began and wha
   assert.equal(after.activity, null);
 });
 
+test("the human turns auto-merge on and off; the approved run guide is swapped whole and the old one kept", async () => {
+  const { AUTO_ROUTE, setAutoRoute } = await import("../lib/bootstrap.mjs");
+  const { loadRecipe } = await import("../lib/recipe.mjs");
+  const { readdirSync, statSync } = await import("node:fs");
+  const kept = () => (existsSync(paths.recipeHistory) ? readdirSync(paths.recipeHistory).length : 0);
+  rmSync(paths.recipe, { recursive: true, force: true });
+  assert.throws(() => setAutoRoute(true), /승인된 실행 지침이 없습니다/);
+  cpSync(draft({ autoRoute: null }), paths.recipe, { recursive: true });
+  const before = kept();
+  setAutoRoute(true);
+  assert.deepEqual(loadRecipe(paths.recipe).autoRoute, AUTO_ROUTE);
+  assert.ok(existsSync(join(paths.recipe, "screens", "home.md")));
+  assert.equal(statSync(join(paths.recipe, "recipe.json")).mode & 0o777, 0o644);
+  assert.equal(kept(), before + 1);
+  setAutoRoute(false);
+  assert.equal(loadRecipe(paths.recipe).autoRoute, null);
+  assert.equal(kept(), before + 2);
+});
+
 test("verification restarts the app even when one is already running on the port", async () => {
   const { spawn } = await import("node:child_process");
   const stray = spawn("sleep", ["28"], { detached: true, stdio: "ignore" });

@@ -1,13 +1,14 @@
-import { AlertTriangle, BellOff, CheckCircle2, ChevronDown, Clock, Pause, Play, XCircle } from "lucide-react";
+import { AlertTriangle, BellOff, CheckCircle2, ChevronDown, Clock, GitMerge, Pause, Play, XCircle } from "lucide-react";
 import { AnimatePresence, motion, stagger, useReducedMotion } from "motion/react";
 import { type ReactNode, useMemo, useState } from "react";
-import { useServer } from "@/api/client";
+import { useServer, useSetAutoMerge, useSettings } from "@/api/client";
 import { useReopen } from "@/api/setup";
 import type { ServerCheckTime, ServerProcessGroup, ServerService, ServerStatus } from "@/api/types";
 import { ErrorState } from "@/components/error-state";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { bytes, type Level, percentOf, usageLevel } from "@/lib/format";
@@ -114,6 +115,36 @@ function SlackOff() {
         <Button type="button" variant="outline" size="sm" onClick={() => reopen.mutate("slack")} disabled={reopen.isPending}>
           Slack 연결
         </Button>
+      </Card>
+    </motion.div>
+  );
+}
+
+// Off: every ticket waits for the human's 진행 and 머지. On: small functional fixes merge on their own,
+// with the limits the server sends (lib/bootstrap.mjs AUTO_ROUTE).
+function AutoMerge() {
+  const settings = useSettings();
+  const set = useSetAutoMerge();
+  const s = settings.data;
+  if (!s) return null;
+  const on = set.isPending ? set.variables : s.autoRoute !== null;
+  const rule = s.autoRoute ?? s.rule;
+  return (
+    <motion.div variants={rise}>
+      <Card size="sm" className="gap-2 px-4">
+        <div className="flex items-center gap-3">
+          <GitMerge className="size-4 shrink-0 text-muted-foreground" />
+          <label htmlFor="auto-merge" className="flex-1 text-sm font-medium">
+            자동 머지
+          </label>
+          <Switch id="auto-merge" checked={on} disabled={set.isPending} onCheckedChange={(v) => set.mutate(v)} />
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {on
+            ? `재현 테스트가 있는 low·medium 기능 수정 중 소스 ${rule.files}파일·${rule.lines}줄 이하${rule.copyCheck ? ", 화면 문구 변경 없음" : ""}이면 사람 없이 PR을 열고 merge합니다. 나머지는 사람이 정합니다.`
+            : "모든 티켓이 사람의 진행과 머지를 기다립니다."}
+        </p>
+        {set.error && <p className="text-xs text-destructive">바꾸지 못했습니다: {set.error.message}</p>}
       </Card>
     </motion.div>
   );
@@ -358,6 +389,7 @@ export function ServerView() {
     <motion.div variants={grid} initial={reduce ? false : "hidden"} animate="show" className="mx-auto flex max-w-3xl flex-col gap-3">
       <Header s={s} freshness={<Freshness updatedAt={server.dataUpdatedAt} failed={server.isRefetchError} live={live} onLive={setLive} />} />
       <ServiceAlerts services={s.services} />
+      <AutoMerge />
       {!s.slack && <SlackOff />}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
         <Metric title="CPU" value={s.cpu.percent}>

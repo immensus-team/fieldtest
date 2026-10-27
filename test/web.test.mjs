@@ -221,3 +221,16 @@ test("skipping Slack finishes its step without tokens", async () => {
   assert.equal(state.current, "start");
   for (const step of STEPS) completeStep(step, {});
 });
+
+test("auto-merge is read and switched from the dashboard with the session token", async () => {
+  const { AUTO_ROUTE } = await import("../lib/bootstrap.mjs");
+  // An earlier test reopened the repo step, which drops the approved recipe.
+  useFixtureRecipe();
+  assert.equal((await call("/api/settings/auto-merge", { method: "POST", body: { on: true } })).status, 403);
+  const on = await call("/api/settings/auto-merge", { method: "POST", token: TOKEN, body: { on: true } });
+  assert.equal(on.status, 200);
+  assert.deepEqual(await (await call("/api/settings")).json(), { autoRoute: AUTO_ROUTE, rule: AUTO_ROUTE });
+  await call("/api/settings/auto-merge", { method: "POST", token: TOKEN, body: { on: false } });
+  assert.equal((await (await call("/api/settings")).json()).autoRoute, null);
+  assert.equal((await call("/api/settings/auto-merge", { method: "POST", token: TOKEN, body: { on: "yes" } })).status, 400);
+});
