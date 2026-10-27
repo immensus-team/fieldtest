@@ -43,3 +43,10 @@ test("the login terminal log is the owner's alone (0600), even under umask 002",
   assert.equal(statSync(log).mode & 0o777, 0o600);
   assert.match(read(log, "utf8"), /token-line/);
 });
+
+test("a pasted code is typed first and Enter goes separately, so the prompt submits it", async () => {
+  const { typeCode } = await import("../lib/device.mjs");
+  const writes = [];
+  await typeCode({ write: (s) => writes.push(s) }, "  abc#def \n", 10);
+  assert.deepEqual(writes, ["abc#def", "\r"]);
+});
