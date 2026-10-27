@@ -8,7 +8,7 @@ import { test } from "node:test";
 const root = mkdtempSync(join(tmpdir(), "ft-update-"));
 process.env.FIELDTEST_DATA = join(root, "data");
 process.env.FIELDTEST_APPROVED = join(root, "approved");
-const { decide, newestTag, update, updateAlerts, updateFile } = await import("../lib/update.mjs");
+const { decide, draining, drainFile, newestTag, update, updateAlerts, updateFile } = await import("../lib/update.mjs");
 
 const git = (cwd, ...args) => execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@t.test", ...args], { cwd, encoding: "utf8" }).trim();
 
@@ -50,6 +50,8 @@ test("a busy install records since when it waits", async () => {
   assert.equal(r.action, "wait");
   assert.equal(version(), "v0.1.0");
   assert.equal(state().waiting.tag, "v0.2.0");
+  // The loop takes no new work while a release waits, so the running task is the last before it.
+  assert.equal(draining(), true);
 });
 
 test("an idle install moves to the newest release and restarts with it", async () => {
@@ -59,6 +61,18 @@ test("an idle install moves to the newest release and restarts with it", async (
   assert.equal(state().current, "v0.2.0");
   assert.equal(state().waiting, null);
   assert.deepEqual(updateAlerts(state()), []);
+  assert.equal(draining(), false);
+});
+
+test("a drain mark older than the longest wait no longer holds the loop", async () => {
+  const { mkdirSync, utimesSync, writeFileSync: write } = await import("node:fs");
+  const { dirname } = await import("node:path");
+  mkdirSync(dirname(drainFile()), { recursive: true });
+  write(drainFile(), "v9.9.9");
+  assert.equal(draining(), true);
+  const old = new Date(Date.now() - 3 * 60 * 60 * 1000);
+  utimesSync(drainFile(), old, old);
+  assert.equal(draining(), false);
 });
 
 test("a release that does not come up is rolled back and not tried again", async () => {
