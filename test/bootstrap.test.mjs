@@ -222,12 +222,16 @@ test("verification restarts the app even when one is already running on the port
 
 test("the promoted recipe and its history are read-only for the agent's group", async () => {
   const { statSync } = await import("node:fs");
+  const { setAutoRoute } = await import("../lib/bootstrap.mjs");
   const old = process.umask(0o002);
+  rmSync(paths.recipeHistory, { recursive: true, force: true });
   rmSync(paths.recipeDraft, { recursive: true, force: true });
   cpSync(draft({ seed: ["b"] }), paths.recipeDraft, { recursive: true });
   promoteDraft({ approved: true });
+  setAutoRoute(true);
   process.umask(old);
   assert.equal(statSync(join(paths.recipe, "recipe.json")).mode & 0o777, 0o644);
+  assert.equal(statSync(paths.recipeHistory).mode & 0o777, 0o755);
   for (const name of (await import("node:fs")).readdirSync(paths.recipeHistory)) assert.equal(statSync(join(paths.recipeHistory, name)).mode & 0o777, 0o755);
 });
 
