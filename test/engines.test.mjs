@@ -29,6 +29,8 @@ test("a session's tool calls read as what it is doing now", async () => {
   const { activityOf } = await import("../lib/engines.mjs");
   const at = (name, input) => activityOf(toolEvent(name, input), "/wt");
   assert.equal(at("Bash", { command: "npm ci\n--more" }), "명령 실행: npm ci");
+  assert.equal(at("Bash", { command: "cd /wt/sub && head -30 a.md" }), "명령 실행: head -30 a.md");
+  assert.equal(at("Bash", { command: "cd /wt; ls" }), "명령 실행: ls");
   assert.equal(at("Read", { file_path: "/wt/package.json" }), "파일 읽기: package.json");
   assert.equal(at("Write", { file_path: "/srv/fieldtest/data/recipe-draft/recipe.json" }), "파일 쓰기: recipe-draft/recipe.json");
   assert.equal(at("Grep", { pattern: "playwright" }), "코드 검색: playwright");
