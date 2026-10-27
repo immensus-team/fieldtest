@@ -64,7 +64,8 @@ function useSetupMutation<I, O>(fn: (input: I) => Promise<O>) {
 }
 
 export const useServerCheck = () => useSetupMutation(() => postJson<{ checks: ServerCheck[] }>("/api/setup/server"));
-export const useStartLogin = (step: "github" | "claude" | "codex") => useSetupMutation(() => postJson<{ id: string }>(`/api/setup/${step}/start`));
+export const useStartLogin = (step: "github" | "claude" | "codex") =>
+  useSetupMutation(() => postJson<{ id: string | null; done?: boolean }>(`/api/setup/${step}/start`));
 export const useSendLoginCode = (id: string | null) => useSetupMutation((code: string) => postJson(`/api/setup/login/${id}/code`, { code }));
 
 export function useLogin(id: string | null) {
