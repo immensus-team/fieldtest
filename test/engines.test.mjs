@@ -40,7 +40,7 @@ test("a session's tool calls read as what it is doing now", async () => {
   assert.equal(at("mcp__playwright__browser_tabs", {}), "브라우저 조작");
   assert.equal(at("ToolSearch", {}), "도구 준비");
   assert.equal(at("SomethingNew", {}), "도구 사용: SomethingNew");
-  assert.equal(at("TodoWrite", { todos: [{ status: "completed", activeForm: "읽기" }, { status: "in_progress", activeForm: "레시피 검증 중" }] }), "레시피 검증 중");
+  assert.equal(at("TodoWrite", { todos: [{ status: "completed", activeForm: "읽기" }, { status: "in_progress", activeForm: "실행 지침 검증 중" }] }), "실행 지침 검증 중");
   assert.equal(activityOf({ type: "result" }, "/wt"), null);
   assert.equal(activityOf({ type: "assistant", message: { content: [{ type: "text", text: "생각" }] } }, "/wt"), null);
 });

@@ -20,7 +20,7 @@ export function RepoStep({ setup, headingRef, onDone, reopen }: StepProps) {
 
   if (done) {
     return (
-      <StepBody headingRef={headingRef} title="검사할 레포" lead="에이전트가 탐색하고 고칠 레포입니다. 바꾸면 레시피를 다시 만듭니다.">
+      <StepBody headingRef={headingRef} title="검사할 레포" lead="에이전트가 탐색하고 고칠 레포입니다. 바꾸면 실행 지침을 다시 만듭니다.">
         <Part>
           <DoneNote onRedo={() => reopen("repo")}>
             <span className="font-mono">{String(setup.steps.repo.info.repo)}</span> ({String(setup.steps.repo.info.base)} branch)

@@ -155,9 +155,9 @@ test("a card says which board it belongs to", () => {
 test("the banner says when the recipe is being repaired, failed or waits for approval", async () => {
   const { alertsOf } = await import("../lib/view.mjs");
   const text = (recipe) => alertsOf([], [], false, null, recipe).map((a) => a.text);
-  assert.match(text({ phase: "repair", stage: "session" })[0], /레시피 수리 중/);
-  assert.match(text({ stage: "failed", error: "install 실패" })[0], /레시피 검증 실패.*fieldtest recipe repair/);
-  assert.match(text({ awaitingApproval: ["checks"] })[0], /레시피 변경 승인 대기.*fieldtest recipe show/);
+  assert.match(text({ phase: "repair", stage: "session" })[0], /실행 지침 수리 중/);
+  assert.match(text({ stage: "failed", error: "install 실패" })[0], /실행 지침 검증 실패.*fieldtest recipe repair/);
+  assert.match(text({ awaitingApproval: ["checks"] })[0], /실행 지침 변경 승인 대기.*fieldtest recipe show/);
   assert.deepEqual(text({ phase: "repair", stage: "promoted" }), []);
 });
 

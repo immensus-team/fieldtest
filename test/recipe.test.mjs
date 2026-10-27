@@ -26,7 +26,7 @@ test("form login needs an account and init-page login needs a page", () => {
 });
 
 test("loadRecipe refuses a broken recipe", () => {
-  assert.throws(() => loadRecipe(join(FIXTURE, "screens")), /레시피/);
+  assert.throws(() => loadRecipe(join(FIXTURE, "screens")), /실행 지침/);
 });
 
 test("a check change needs the human; a seed change does not", () => {

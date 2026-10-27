@@ -19,7 +19,7 @@ test("the e2e setup ticket may change package files, the Playwright config and t
 test("exploration waits for a repair, a failed recipe, a recipe approval or an unmerged e2e setup", () => {
   assert.equal(exploreBlocked([], {}), null);
   assert.match(exploreBlocked([], { repair: { reason: "x" } }), /수리/);
-  assert.match(exploreBlocked([], { stage: "failed", error: "e" }), /레시피 검증 실패/);
+  assert.match(exploreBlocked([], { stage: "failed", error: "e" }), /실행 지침 검증 실패/);
   assert.match(exploreBlocked([], { awaitingApproval: ["checks"] }), /승인/);
   assert.match(exploreBlocked([{ id: "QA-0001", setup: true, status: "proposal" }], {}), /e2e 준비 PR/);
   assert.equal(exploreBlocked([{ id: "QA-0001", setup: true, status: "merged" }], {}), null);

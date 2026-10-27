@@ -9,7 +9,7 @@ const HELP = `fieldtest <command>
 
 에이전트 사용자
   run                      24시간 루프 (systemd가 실행)
-  bootstrap [--feedback "..."]   레시피를 만들거나 고치고 검증 (설치 마법사가 실행)
+  bootstrap [--feedback "..."]   실행 지침을 만들거나 고치고 검증 (설치 마법사가 실행)
 
 내 사용자
   watch                    Slack 명령, PR 상태 확인·push·답글 (systemd timer가 1분마다 실행)
@@ -25,9 +25,9 @@ const HELP = `fieldtest <command>
   merge <id>               최종 검토 중인 PR을 squash merge (main보다 뒤면 맞추고 다시 검토)
   resolve <id...> --pr <n> 다른 PR(merge된 것)로 함께 해결된 티켓을 해결 완료로 종료
   recipe show              수리 상태와 초안의 변경(지금 → 초안), 초안 hash
-  recipe repair [--feedback "..."]   레시피 수리를 다시 요청
+  recipe repair [--feedback "..."]   실행 지침 수리를 다시 요청
   recipe key <이름>        실제 키 저장 (값은 표준 입력)
-  recipe approve --hash <h>  검증된 레시피 초안 승인 (recipe show의 hash, 게이트 항목을 바꾼 수리)
+  recipe approve --hash <h>  검증된 실행 지침 초안 승인 (recipe show의 hash, 게이트 항목을 바꾼 수리)
   doctor                   실행 환경 점검`;
 
 const [command, ...rest] = process.argv.slice(2);

@@ -10,8 +10,8 @@ export const STEP_LABELS: Record<StepId, string> = {
   claude: "Claude",
   codex: "Codex",
   slack: "Slack",
-  bootstrap: "레시피 만들기",
-  recipe: "레시피 확인",
+  bootstrap: "실행 지침 만들기",
+  recipe: "실행 지침 확인",
   start: "시작",
 };
 

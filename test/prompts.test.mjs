@@ -186,6 +186,6 @@ test("friction on a step that went as expected reaches the judge, and an improve
 test("the bootstrap prompt renders with every slot filled", () => {
   const p = renderPrompt("bootstrap", { toolDir: "/t", draftDir: "/d", demoUrl: "http://d", workDir: "/w", guideDocs: "AGENTS.md", mode: "처음 만들기", repo: "acme/shop", baseBranch: "main", feedback: "", secrets: "없음", declined: "없음" });
   assert.doesNotMatch(p, /undefined|\{\{\w+\}\}/);
-  assert.match(p, /레시피 초안은 `\/d`에 쓴다/);
+  assert.match(p, /실행 지침 초안은 `\/d`에 쓴다/);
   assert.match(p, /"autoRoute": null/);
 });

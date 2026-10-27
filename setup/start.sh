@@ -70,15 +70,15 @@ case "${1:-start}" in
     ;;
 esac
 
-RECIPE=$DATA/recipe/recipe.json
-[ -s "$RECIPE" ] || { echo "승인된 레시피($RECIPE)가 없다. 설치 마법사에서 레포를 고르고 레시피를 승인한다." >&2; exit 1; }
+RECIPE=$APPROVED/recipe/recipe.json
+[ -s "$RECIPE" ] || { echo "승인된 실행 지침($RECIPE)이 없다. 설치 마법사에서 레포를 고르고 실행 지침을 승인한다." >&2; exit 1; }
 BASE=$(jq -r .baseBranch "$RECIPE")
 INSTALL_CMDS=$(jq -r '.install | join(" && ")' "$RECIPE")
 E2E_CWD=$(jq -r .e2e.cwd "$RECIPE")
 PLAYWRIGHT=$(jq -r .e2e.playwright "$RECIPE")
 prepare "$(jq -r .repo "$RECIPE")"
 
-step "의존성과 Playwright 브라우저 (레시피의 설치 명령)"
+step "의존성과 Playwright 브라우저 (실행 지침의 설치 명령)"
 "${AS_AGENT[@]}" bash -c "cd '$DATA/repo' && git checkout --quiet --detach 'origin/$BASE' && $INSTALL_CMDS && cd '$E2E_CWD' && $PLAYWRIGHT install chromium"
 # The Playwright inside PLAYWRIGHT_MCP (lib/config.mjs) needs its own Chromium build. Update both together.
 "${AS_AGENT[@]}" bash -c "cd ~ && npx -y playwright@1.64.0-alpha-1790635538000 install chromium"

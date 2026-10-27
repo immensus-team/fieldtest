@@ -27,15 +27,15 @@ export function RecipeStep({ setup, headingRef, onDone, reopen }: StepProps) {
 
   if (done) {
     return (
-      <StepBody headingRef={headingRef} title="레시피 확인" lead="승인한 레시피로 탐색과 검사를 합니다.">
+      <StepBody headingRef={headingRef} title="실행 지침 확인" lead="승인한 실행 지침으로 탐색과 검사를 합니다.">
         <Part>
-          <DoneNote onRedo={() => reopen("recipe")}>레시피를 승인했습니다.</DoneNote>
+          <DoneNote onRedo={() => reopen("recipe")}>실행 지침을 승인했습니다.</DoneNote>
         </Part>
       </StepBody>
     );
   }
   return (
-    <StepBody headingRef={headingRef} title="레시피 확인" lead="에이전트가 쓴 실행 방법과 화면 목록입니다. 맞으면 시작하고, 고칠 점이 있으면 글로 적어 다시 만들게 합니다.">
+    <StepBody headingRef={headingRef} title="실행 지침 확인" lead="에이전트가 쓴 실행 방법과 화면 목록입니다. 맞으면 시작하고, 고칠 점이 있으면 글로 적어 다시 만들게 합니다.">
       {!r ? (
         <Part>
           <Skeleton className="h-40 rounded-xl" />
@@ -101,13 +101,13 @@ export function RecipeStep({ setup, headingRef, onDone, reopen }: StepProps) {
           </Part>
         </>
       )}
-      <StepError title="레시피를 처리하지 못했습니다" error={recipe.error?.message ?? action.error?.message} />
+      <StepError title="실행 지침을 처리하지 못했습니다" error={recipe.error?.message ?? action.error?.message} />
       <Part>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <StatusButton state={action.isPending && action.variables?.action === "start" ? "working" : "idle"} idle="이 레시피로 시작" working="승인 중" disabled={!r} onClick={() => r && action.mutate({ action: "start", hash: r.hash }, { onSuccess: onDone })} />
+          <StatusButton state={action.isPending && action.variables?.action === "start" ? "working" : "idle"} idle="이 실행 지침으로 시작" working="승인 중" disabled={!r} onClick={() => r && action.mutate({ action: "start", hash: r.hash }, { onSuccess: onDone })} />
         </div>
         <div className="flex flex-col gap-2">
-          <Textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="고칠 점 (예: 로그인 없이 볼 수 있는 화면도 넣어 주세요)" aria-label="레시피 수정 요청" />
+          <Textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="고칠 점 (예: 로그인 없이 볼 수 있는 화면도 넣어 주세요)" aria-label="실행 지침 수정 요청" />
           <div>
             <StatusButton
               variant="outline"

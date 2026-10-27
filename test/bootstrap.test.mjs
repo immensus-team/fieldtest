@@ -99,12 +99,12 @@ test("watch promotes a clean repair at once and tells the human once about a fai
   await followRecipe({ notify });
   assert.equal(readRecipeState().stage, "promoted");
   assert.deepEqual(JSON.parse(readFileSync(join(paths.recipe, "recipe.json"), "utf8")).seed, ["true"]);
-  assert.match(told.at(-1), /레시피를 수리했습니다/);
+  assert.match(told.at(-1), /실행 지침을 수리했습니다/);
 
   writeJson(paths.recipeState, { phase: "repair", stage: "failed", error: "install 실패" });
   await followRecipe({ notify });
   await followRecipe({ notify });
-  assert.equal(told.filter((t) => /레시피 수리 실패/.test(t)).length, 1);
+  assert.equal(told.filter((t) => /실행 지침 수리 실패/.test(t)).length, 1);
 });
 
 test("a failed bootstrap keeps the stage it failed at", async () => {
