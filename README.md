@@ -25,7 +25,9 @@
 
 ### 1. 서버 만들기
 
-AWS 콘솔의 CloudFormation에서 **스택 생성 → 템플릿 파일 업로드**로 [`setup/ec2.yaml`](setup/ec2.yaml)을 올린다.
+[**Launch stack (서울 리전)**](https://console.aws.amazon.com/cloudformation/home?region=ap-northeast-2#/stacks/quickcreate?templateURL=https://fieldtest-templates-7ca67686.s3.ap-northeast-2.amazonaws.com/ec2.yaml&stackName=fieldtest-main&param_InstallName=main)
+링크를 열면 AWS 콘솔에 [`setup/ec2.yaml`](setup/ec2.yaml)이 채워진 스택 생성 화면이 나온다. 다른 리전은 링크의 `region=`을
+바꾸거나, CloudFormation에서 **스택 생성 → 템플릿 파일 업로드**로 같은 파일을 올린다.
 
 - 스택 이름: `fieldtest-<설치 이름>` (예: `fieldtest-shop`)
 - `InstallName`: 설치 이름. 영문 소문자·숫자·`-`
