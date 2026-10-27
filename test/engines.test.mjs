@@ -36,6 +36,10 @@ test("a session's tool calls read as what it is doing now", async () => {
   assert.equal(at("Grep", { pattern: "playwright" }), "코드 검색: playwright");
   assert.equal(at("mcp__playwright__browser_navigate", { url: "http://127.0.0.1:3200/" }), "브라우저: http://127.0.0.1:3200/ 열기");
   assert.equal(at("mcp__playwright__browser_take_screenshot", {}), "브라우저: 스크린샷");
+  assert.equal(at("mcp__playwright__browser_run_code_unsafe", {}), "브라우저: 코드 실행");
+  assert.equal(at("mcp__playwright__browser_tabs", {}), "브라우저 조작");
+  assert.equal(at("ToolSearch", {}), "도구 준비");
+  assert.equal(at("SomethingNew", {}), "도구 사용: SomethingNew");
   assert.equal(at("TodoWrite", { todos: [{ status: "completed", activeForm: "읽기" }, { status: "in_progress", activeForm: "레시피 검증 중" }] }), "레시피 검증 중");
   assert.equal(activityOf({ type: "result" }, "/wt"), null);
   assert.equal(activityOf({ type: "assistant", message: { content: [{ type: "text", text: "생각" }] } }, "/wt"), null);
