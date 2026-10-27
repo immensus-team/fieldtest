@@ -46,7 +46,7 @@ test("an install waits while the agent works, but not past the longest wait", ()
 });
 
 test("a busy install records since when it waits", async () => {
-  const r = await update({ ...ok, busy: () => "pr: 구현" });
+  const r = await update({ ...ok, busy: () => "pr: 구현", hold: false });
   assert.equal(r.action, "wait");
   assert.equal(version(), "v0.1.0");
   assert.equal(state().waiting.tag, "v0.2.0");
@@ -55,7 +55,11 @@ test("a busy install records since when it waits", async () => {
 });
 
 test("an idle install moves to the newest release and restarts with it", async () => {
-  const r = await update(ok);
+  // A held check waits for the running task to end, then applies at once instead of at the next timer.
+  const answers = ["explore: 결함 수정", "explore: 결함 수정", null, null];
+  let paused = 0;
+  const r = await update({ ...ok, busy: () => answers.shift(), pause: async () => paused++ });
+  assert.equal(paused, 2);
   assert.equal(r.action, "applied");
   assert.equal(version(), "v0.2.0");
   assert.equal(state().current, "v0.2.0");
