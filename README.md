@@ -107,4 +107,4 @@ npm test
 cd web && npm run typecheck && npm run build
 ```
 
-이 저장소에는 라이선스가 없다. 코드를 볼 수는 있지만 사용·수정·배포 권한은 주지 않는다.
+MIT 라이선스다. [LICENSE](LICENSE)를 본다.

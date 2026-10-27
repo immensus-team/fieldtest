@@ -1,4 +1,5 @@
-import { ArrowLeft, ArrowRight, ListOrdered, Moon, Sun } from "lucide-react";
+import { ArrowLeft, ArrowRight, Info, ListOrdered, Moon, Sun } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { STEP_IDS, type SetupState, type StepId, useReopen } from "@/api/setup";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,7 @@ import { ServerStep } from "./steps/server";
 import { SlackStep } from "./steps/slack";
 import { StartStep } from "./steps/start";
 import type { StepProps } from "./steps/types";
+import { Welcome } from "./welcome";
 
 // After a step finishes, its check draws before the next step slides in.
 const ADVANCE_MS = 600;
@@ -45,6 +47,8 @@ export function SetupApp({ setup }: { setup: SetupState }) {
   const reopenStep = useReopen();
   const [[viewing, direction], setView] = useState<[StepId, number]>([setup.current ?? "start", 1]);
   const [menu, setMenu] = useState(false);
+  // A new install opens on what fieldtest is; one already under way goes straight to its step.
+  const [intro, setIntro] = useState(!setup.steps.server.done);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const index = STEP_IDS.indexOf(viewing);
   const reachable = (id: StepId) => setup.steps[id].done || id === setup.current;
@@ -107,56 +111,72 @@ export function SetupApp({ setup }: { setup: SetupState }) {
           {setup.name}
         </Badge>
         <span className="ml-1 hidden text-sm text-muted-foreground sm:inline">설치</span>
-        <Button type="button" variant="ghost" size="icon" className="ml-auto" onClick={toggle} aria-label={theme === "dark" ? "밝은 테마" : "어두운 테마"}>
+        {!intro && (
+          <Button type="button" variant="ghost" size="sm" className="ml-auto" onClick={() => setIntro(true)}>
+            <Info />
+            소개
+          </Button>
+        )}
+        <Button type="button" variant="ghost" size="icon" className={intro ? "ml-auto" : ""} onClick={toggle} aria-label={theme === "dark" ? "밝은 테마" : "어두운 테마"}>
           {theme === "dark" ? <Sun /> : <Moon />}
         </Button>
       </header>
 
-      <div className="mx-auto grid w-full max-w-5xl flex-1 gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[16rem_minmax(0,1fr)] lg:py-10">
-        <aside className="hidden lg:block">
-          <nav aria-label="설치 단계" className="sticky top-24">
-            <Stepper setup={setup} viewing={viewing} onPick={go} />
-          </nav>
-        </aside>
+      <AnimatePresence mode="wait" initial={false}>
+        {intro ? (
+          <motion.main key="intro" exit={{ opacity: 0, y: -8, transition: { duration: 0.2 } }} className="flex-1">
+            <Welcome onStart={() => setIntro(false)} />
+          </motion.main>
+        ) : (
+          <motion.div key="steps" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0, transition: { duration: 0.25 } }} className="flex flex-1 flex-col">
+          <div className="mx-auto grid w-full max-w-5xl flex-1 gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[16rem_minmax(0,1fr)] lg:py-10">
+            <aside className="hidden lg:block">
+              <nav aria-label="설치 단계" className="sticky top-24">
+                <Stepper setup={setup} viewing={viewing} onPick={go} />
+              </nav>
+            </aside>
 
-        <div className="flex min-w-0 flex-col gap-4">
-          <div className="flex items-center gap-3 lg:hidden">
-            <StepProgress setup={setup} viewing={viewing} />
-            <Sheet open={menu} onOpenChange={setMenu}>
-              <SheetTrigger asChild>
-                <Button type="button" variant="outline" size="sm">
-                  <ListOrdered />
-                  단계
+            <div className="flex min-w-0 flex-col gap-4">
+              <div className="flex items-center gap-3 lg:hidden">
+                <StepProgress setup={setup} viewing={viewing} />
+                <Sheet open={menu} onOpenChange={setMenu}>
+                  <SheetTrigger asChild>
+                    <Button type="button" variant="outline" size="sm">
+                      <ListOrdered />
+                      단계
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="left" className="w-[85vw] max-w-sm">
+                    <SheetHeader>
+                      <SheetTitle>설치 단계</SheetTitle>
+                      <SheetDescription>끝낸 단계와 지금 단계로 이동할 수 있습니다.</SheetDescription>
+                    </SheetHeader>
+                    <div className="px-3">
+                      <Stepper setup={setup} viewing={viewing} onPick={go} />
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              </div>
+
+              <StepFrame stepKey={viewing} direction={direction}>
+                <StepView id={viewing} setup={setup} headingRef={headingRef} onDone={onDone} reopen={reopen} />
+              </StepFrame>
+
+              <nav aria-label="단계 이동" className="flex items-center justify-between gap-3">
+                <Button type="button" variant="ghost" disabled={!prev} onClick={() => prev && go(prev)}>
+                  <ArrowLeft />
+                  {prev ? STEP_LABELS[prev] : "뒤로"}
                 </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[85vw] max-w-sm">
-                <SheetHeader>
-                  <SheetTitle>설치 단계</SheetTitle>
-                  <SheetDescription>끝낸 단계와 지금 단계로 이동할 수 있습니다.</SheetDescription>
-                </SheetHeader>
-                <div className="px-3">
-                  <Stepper setup={setup} viewing={viewing} onPick={go} />
-                </div>
-              </SheetContent>
-            </Sheet>
+                <Button type="button" variant="outline" disabled={!next || !setup.steps[viewing].done || !reachable(next)} onClick={() => next && go(next)}>
+                  {next ? STEP_LABELS[next] : "다음"}
+                  <ArrowRight />
+                </Button>
+              </nav>
+            </div>
           </div>
-
-          <StepFrame stepKey={viewing} direction={direction}>
-            <StepView id={viewing} setup={setup} headingRef={headingRef} onDone={onDone} reopen={reopen} />
-          </StepFrame>
-
-          <nav aria-label="단계 이동" className="flex items-center justify-between gap-3">
-            <Button type="button" variant="ghost" disabled={!prev} onClick={() => prev && go(prev)}>
-              <ArrowLeft />
-              {prev ? STEP_LABELS[prev] : "뒤로"}
-            </Button>
-            <Button type="button" variant="outline" disabled={!next || !setup.steps[viewing].done || !reachable(next)} onClick={() => next && go(next)}>
-              {next ? STEP_LABELS[next] : "다음"}
-              <ArrowRight />
-            </Button>
-          </nav>
-        </div>
-      </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
