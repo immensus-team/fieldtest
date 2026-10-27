@@ -174,6 +174,25 @@ test("the draft names the repo the installer chose, whatever the session wrote",
   assert.equal(JSON.parse(readFileSync(join(paths.recipeDraft, "recipe.json"), "utf8")).repo, "acme/shop");
 });
 
+test("the setup page sees when the bootstrap began, when its stage began and what the session does", async () => {
+  const { bootstrap } = await import("../lib/bootstrap.mjs");
+  const written = draft({ install: ["exit 1"] });
+  let during = null;
+  const session = async ({ onActivity }) => {
+    onActivity("명령 실행: npm ci");
+    during ??= readRecipeState();
+    cpSync(written, paths.recipeDraft, { recursive: true });
+    return { ok: true, json: { status: "ok", reason: "", realKeys: [], needsE2eSetup: false, e2eSetup: { title: "", spec: "" }, evidence: "" } };
+  };
+  await bootstrap({ repo: "acme/shop", base: "main", session });
+  assert.equal(during.activity.text, "명령 실행: npm ci");
+  assert.ok(Date.parse(during.startedAt) <= Date.parse(during.stageAt));
+  const after = readRecipeState();
+  assert.equal(after.startedAt, during.startedAt);
+  // The runner's own stages show their name, not the session's last command.
+  assert.equal(after.activity, null);
+});
+
 test("verification restarts the app even when one is already running on the port", async () => {
   const { spawn } = await import("node:child_process");
   const stray = spawn("sleep", ["28"], { detached: true, stdio: "ignore" });

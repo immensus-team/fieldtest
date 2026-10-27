@@ -15,6 +15,9 @@ export type RecipeState = {
   realKeys?: { name: string; why: string }[];
   needsE2eSetup?: boolean;
   awaitingApproval?: string[] | null;
+  startedAt?: string;
+  stageAt?: string;
+  activity?: { text: string; at: string } | null;
   at?: string;
 };
 
